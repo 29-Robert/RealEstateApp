@@ -1,0 +1,47 @@
+﻿using Microsoft.EntityFrameworkCore;
+using RealEstateApp.Domain.Entities;
+
+namespace RealEstateApp.Infrastructure.Persistence.Contexts
+{
+    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+    {
+        public DbSet<Property> Properties { get; set; }
+        public DbSet<PropertyType> PropertyTypes { get; set; }
+        public DbSet<SaleType> SaleTypes { get; set; }
+        public DbSet<Improvement> Improvements { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Property>()
+                .ToTable("Properties");
+
+            modelBuilder.Entity<PropertyType>()
+                .ToTable("PropertyTypes");
+
+            modelBuilder.Entity<SaleType>()
+                .ToTable("SaleTypes");
+
+            modelBuilder.Entity<Improvement>()
+                .ToTable("Improvements");
+
+            modelBuilder.Entity<PropertyType>()
+                .HasMany<Property>(pt => pt.Properties)
+                .WithOne(p => p.PropertyType)
+                .HasForeignKey(p => p.PropertyTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SaleType>()
+                .HasMany<Property>(st => st.Properties)
+                .WithOne(p => p.SaleType)
+                .HasForeignKey(p => p.SaleTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Property>()
+                .HasMany<Improvement>(p => p.Improvements)
+                .WithMany(i => i.Properties)
+                .UsingEntity(j => j.ToTable("PropertyImprovements"));
+        }
+    }
+}
