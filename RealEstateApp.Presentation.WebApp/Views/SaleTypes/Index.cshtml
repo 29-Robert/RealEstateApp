@@ -1,0 +1,59 @@
+﻿@model List<RealEstateApp.Application.ViewModels.SaleTypes.SaleTypeViewModel>
+@{
+    ViewData["Title"] = "Mantenimiento de Tipo de Ventas";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Tipos de Ventas</h2>
+        <a asp-action="Create" class="btn btn-primary">Crear tipo de venta</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            No existen tipos de ventas registrados.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nombre del tipo de venta</th>
+                            <th>Descripción</th>
+                            <th class="text-center">Cantidad de propiedades asociadas</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="align-middle fw-bold">@item.Name</td>
+                                <td class="align-middle">@item.Description</td>
+                                <td class="align-middle text-center">
+                                    <span class="badge bg-info text-dark fs-6">@item.PropertiesCount</span>
+                                </td>
+                                <td class="align-middle text-end">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning me-2">Editar</a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

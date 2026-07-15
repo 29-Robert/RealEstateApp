@@ -1,0 +1,30 @@
+﻿@model RealEstateApp.Application.ViewModels.SaleTypes.SaveSaleTypeViewModel
+@{
+    ViewData["Title"] = "Eliminar Tipo de Venta";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Eliminar Tipo de Venta</h4>
+                </div>
+                <div class="card-body text-center p-4">
+                    <h5 class="text-danger mb-3">¿Está seguro que desea eliminar este tipo de venta y las propiedades asociadas?</h5>
+                    <p class="text-muted mb-4">
+                        Está a punto de eliminar el tipo de venta: <strong class="text-dark">@Model.Name</strong>. Esta acción no se puede deshacer.
+                    </p>
+
+                    <form asp-action="DeletePost" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex justify-content-center gap-3">
+                            <a asp-action="Index" class="btn btn-secondary px-4">Cancelar</a>
+                            <button type="submit" class="btn btn-danger px-4">Aceptar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

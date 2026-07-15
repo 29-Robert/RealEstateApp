@@ -15,7 +15,9 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Property>()
-                .ToTable("Properties");
+                .ToTable("Properties")
+                .Property(p => p.Price)
+                .HasPrecision(18, 2);
 
             modelBuilder.Entity<PropertyType>()
                 .ToTable("PropertyTypes");
