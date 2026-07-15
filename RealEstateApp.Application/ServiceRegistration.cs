@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Application.Services;
 
+
 namespace RealEstateApp.Application
 {
     public static class ServiceRegistration
