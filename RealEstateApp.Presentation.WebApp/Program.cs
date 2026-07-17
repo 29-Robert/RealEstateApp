@@ -10,11 +10,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationLayer();
 builder.Services.AddPersistenceInfrastructure(builder.Configuration);
-
 builder.Services.AddSharedLayerIoc(builder.Configuration);
-builder.Services.AddIdentityInfrastructure(builder.Configuration);
+builder.Services.AddIdentityInfrastructure(builder.Configuration); // Registra base de datos de Identity, Roles y AccountService
 
+// Configuración de Controladores con Vistas (MVC)
 builder.Services.AddControllersWithViews();
+
+// Configuración de Sesión en Memoria (Opcional, pero útil si guardas datos del usuario temporalmente)
 builder.Services.AddSession(opt =>
 {
     opt.IdleTimeout = TimeSpan.FromMinutes(60);
@@ -24,12 +26,16 @@ builder.Services.AddSession(opt =>
 
 var app = builder.Build();
 
+// ==========================================
+// SEMBRADO AUTOMÁTICO DE DATOS (SEEDS)
+// ==========================================
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var seeder = services.GetRequiredService<IIdentitySeeds>();
+        // Ejecución asíncrona del Sembrado de Roles y Usuarios (Admin, Agente, Cliente) por defecto
         await seeder.SeedAsync();
     }
     catch (Exception ex)
@@ -39,6 +45,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// ==========================================
+// MIDDLEWARES DE LA APLICACIÓN (PIPELINE HTTP)
+// ==========================================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -48,15 +57,18 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+// Activa el almacenamiento de sesiones en el servidor
 app.UseSession();
 
+// ¡OJO! Seguridad: Authentication SIEMPRE debe ejecutarse estrictamente antes de Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Account}/{action=Login}/{id?}") // Ajustamos la ruta inicial para que por defecto los mande a loguearse
     .WithStaticAssets();
 
 app.Run();

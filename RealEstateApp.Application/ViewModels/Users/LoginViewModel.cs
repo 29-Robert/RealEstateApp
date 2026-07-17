@@ -11,7 +11,5 @@ namespace RealEstateApp.Application.ViewModels.Users
         [Required(ErrorMessage = "La contraseña es requerida.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = null!;
-
-        public bool RememberMe { get; set; }
     }
 }

@@ -1,76 +1,115 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using RealEstateApp.Application.DTOs.Account;
 using RealEstateApp.Application.DTOs.Email;
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Application.ViewModels.Users;
 using RealEstateApp.Domain.Enums;
+using RealEstateApp.Domain.Settings;
 using RealEstateApp.Infrastructure.Identity.Entities;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RealEstateApp.Infrastructure.Identity.Services
 {
     public class AccountService : IAccountService
     {
-        private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly JWTSettings _jwtSettings;
         private readonly IEmailService _emailService;
 
+
         public AccountService(
-            UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            IEmailService emailService)
+            UserManager<ApplicationUser> userManager,
+            IOptions<JWTSettings> jwtSettings,
+            IEmailService emailService) 
         {
-            _userManager = userManager;
             _signInManager = signInManager;
+            _userManager = userManager;
+            _jwtSettings = jwtSettings.Value;
             _emailService = emailService;
         }
 
         // 1. PROCESO DE LOGIN
         public async Task<AuthenticationResponse> AuthenticateAsync(LoginViewModel loginVm)
         {
-            var response = new AuthenticationResponse();
-
-            // Buscar al usuario por el correo electrónico introducido
             var user = await _userManager.FindByEmailAsync(loginVm.Email);
             if (user == null)
             {
-                response.HasError = true;
-                response.ErrorDescription = $"No existe ninguna cuenta registrada con el correo {loginVm.Email}.";
-                return response;
+                return new AuthenticationResponse { HasError = true, ErrorDescription = "Credenciales incorrectas." };
             }
 
-            // Validar si el usuario está activo (Regla de negocio solicitada)
-            if (!user.IsActive)
-            {
-                response.HasError = true;
-                response.ErrorDescription = "Su cuenta está inactiva. Si es Cliente, verifique su correo para activarla. Si es Agente, espere la aprobación de un Administrador.";
-                return response;
-            }
-
-            // Intentar el inicio de sesión con la contraseña en texto plano
-            var result = await _signInManager.PasswordSignInAsync(user.UserName!, loginVm.Password, loginVm.RememberMe, lockoutOnFailure: false);
+            // Cambiado a false fíjamente por el requerimiento de quitar el "Recordarme"
+            var result = await _signInManager.PasswordSignInAsync(user.UserName!, loginVm.Password, false, lockoutOnFailure: false);
 
             if (!result.Succeeded)
             {
-                response.HasError = true;
-                response.ErrorDescription = "Contraseña incorrecta. Inténtelo de nuevo.";
-                return response;
+                return new AuthenticationResponse { HasError = true, ErrorDescription = "Credenciales incorrectas." };
             }
 
-            // Si las credenciales son correctas, mapeamos la respuesta de autenticación
-            response.Id = user.Id;
-            response.Email = user.Email!;
-            response.UserName = user.UserName!;
-            response.IsActive = user.IsActive;
+            if (!user.EmailConfirmed)
+            {
+                return new AuthenticationResponse { HasError = true, ErrorDescription = "Debes activar tu cuenta por correo antes de iniciar sesión." };
+            }
 
-            // Obtener los roles del usuario desde las tablas relacionales de Identity
+            // Buscamos los roles asignados al usuario en Identity
             var roles = await _userManager.GetRolesAsync(user);
-            response.Roles = roles.ToList();
+
+            var response = new AuthenticationResponse
+            {
+                Id = user.Id,
+                Email = user.Email!,
+                UserName = user.UserName!,
+                Roles = new List<string>(roles),
+                HasError = false
+            };
+
+            // =======================================================
+            // GENERACIÓN DEL TOKEN JWT PARA LA API REST
+            // =======================================================
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.Key);
+
+            // Definimos los Claims (los datos integrados cifrados dentro del token)
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Email, user.Email!),
+                new Claim(ClaimTypes.Name, user.UserName!)
+            };
+
+            // Agregamos cada rol correspondiente del usuario a los claims
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
+                Issuer = _jwtSettings.Issuer,
+                Audience = _jwtSettings.Audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            // Asignamos el string generado a la propiedad de la respuesta
+            response.JWToken = tokenHandler.WriteToken(token);
 
             return response;
         }
-
+        
         // 2. PROCESO DE REGISTRO DIFERENCIADO (CLIENTES VS AGENTES)
         public async Task<RegisterResponse> RegisterUserAsync(RegisterViewModel registerVm, string origin)
         {
@@ -176,13 +215,51 @@ namespace RealEstateApp.Infrastructure.Identity.Services
         private async Task<string> GenerateVerificationUrl(ApplicationUser user, string origin)
         {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            // Codificar el token para transportarlo de manera segura por la barra de direcciones URL
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            // Construye la ruta: https://midominio.com/Account/ConfirmEmail?userId=...&token=...
             var route = "/Account/ConfirmEmail";
             var url = $"{origin}{route}?userId={user.Id}&token={encodedToken}";
             return url;
+        }
+
+        public async Task<RegisterResponse> RegisterAdminOrDeveloperAsync(RegisterViewModel request, string role)
+        {
+            var userWithSameEmail = await _userManager.FindByEmailAsync(request.Email);
+            if (userWithSameEmail != null)
+            {
+                return new RegisterResponse { HasError = true, ErrorDescription = $"El correo '{request.Email}' ya está registrado." };
+            }
+
+            var userWithSameUsername = await _userManager.FindByNameAsync(request.Username);
+            if (userWithSameUsername != null)
+            {
+                return new RegisterResponse { HasError = true, ErrorDescription = $"El nombre de usuario '{request.Username}' ya está en uso." };
+            }
+
+            var user = new ApplicationUser
+            {
+                Email = request.Email,
+                UserName = request.Username,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                EmailConfirmed = true 
+            };
+
+            var result = await _userManager.CreateAsync(user, request.Password);
+
+            if (!result.Succeeded)
+            {
+                System.Text.StringBuilder errors = new();
+                foreach (var error in result.Errors)
+                {
+                    errors.AppendLine(error.Description);
+                }
+                return new RegisterResponse { HasError = true, ErrorDescription = errors.ToString() };
+            }
+
+            await _userManager.AddToRoleAsync(user, role);
+
+            return new RegisterResponse { HasError = false };
         }
     }
 }

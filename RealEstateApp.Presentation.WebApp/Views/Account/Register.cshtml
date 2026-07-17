@@ -1,0 +1,124 @@
+﻿@using RealEstateApp.Application.ViewModels.Users
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Crear Cuenta";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow border-0 rounded-3">
+                <div class="card-body p-4 p-sm-5">
+
+                    <h2 class="card-title text-center fw-bold mb-4 text-primary">Regístrate</h2>
+                    <p class="text-muted text-center mb-4">Crea una cuenta para empezar a interactuar con nuestra plataforma</p>
+
+                    @* Alerta para errores globales que devuelva el servidor *@
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show d-none" role="alert" id="register-error-summary">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <form asp-controller="Account" asp-action="Register" method="post" novalidate>
+
+                        <div class="row">
+                            @* Campo: Nombre *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="FirstName" class="form-label fw-semibold">Nombre</label>
+                                <input asp-for="FirstName" class="form-control" placeholder="Ej. Juan" />
+                                <span asp-validation-for="FirstName" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            @* Campo: Apellido *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="LastName" class="form-label fw-semibold">Apellido</label>
+                                <input asp-for="LastName" class="form-control" placeholder="Ej. Pérez" />
+                                <span asp-validation-for="LastName" class="text-danger small mt-1 d-block"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            @* Campo: Nombre de Usuario *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="Username" class="form-label fw-semibold">Nombre de Usuario</label>
+                                <input asp-for="Username" class="form-control" placeholder="juanperez12" />
+                                <span asp-validation-for="Username" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            @* Campo: Teléfono *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="PhoneNumber" class="form-label fw-semibold">Teléfono (10 dígitos)</label>
+                                <input asp-for="PhoneNumber" class="form-control" placeholder="8091234567" type="tel" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger small mt-1 d-block"></span>
+                            </div>
+                        </div>
+
+                        @* Campo: Correo Electrónico *@
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-semibold">Correo Electrónico</label>
+                            <input asp-for="Email" class="form-control" placeholder="correo@ejemplo.com" type="email" />
+                            <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <div class="row">
+                            @* Campo: Contraseña *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="Password" class="form-label fw-semibold">Contraseña</label>
+                                <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" />
+                                <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            @* Campo: Confirmar Contraseña *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="ConfirmPassword" class="form-label fw-semibold">Confirmar Contraseña</label>
+                                <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="••••••••" />
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
+                            </div>
+                        </div>
+
+                        @* Campo Especial: Tipo de Usuario (Selector de Rol) *@
+                        <div class="mb-4">
+                            <label asp-for="UserType" class="form-label fw-semibold">¿Cómo deseas registrarte?</label>
+                            <select asp-for="UserType" class="form-select">
+                                <option value="" selected disabled>-- Selecciona una opción --</option>
+                                <option value="Cliente">Quiero comprar/alquilar propiedades (Cliente)</option>
+                                <option value="Agente">Quiero publicar y vender propiedades (Agente)</option>
+                            </select>
+                            <span asp-validation-for="UserType" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        @* Botón de Registro *@
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-2 mb-3">
+                            Crear Cuenta <i class="bi bi-person-plus-fill ms-1"></i>
+                        </button>
+
+                    </form>
+
+                    <hr class="text-muted my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0 text-muted">¿Ya tienes una cuenta?</p>
+                        <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-bold text-primary">Inicia sesión aquí</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // Mostrar alerta si el servidor devuelve errores de Identity o duplicados
+        document.addEventListener("DOMContentLoaded", function () {
+            var summary = document.getElementById("register-error-summary");
+            if (summary && summary.innerText.trim().length > 0) {
+                summary.classList.remove("d-none");
+            }
+        });
+    </script>
+}

@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using RealEstateApp.Application.DTOs.Account;
+﻿using RealEstateApp.Application.DTOs.Account;
 using RealEstateApp.Application.ViewModels.Users;
 
 namespace RealEstateApp.Application.Interfaces.Services
@@ -10,5 +9,7 @@ namespace RealEstateApp.Application.Interfaces.Services
         Task<RegisterResponse> RegisterUserAsync(RegisterViewModel registerVm, string origin);
         Task<string> ConfirmEmailAsync(string userId, string token);
         Task SignOutAsync();
+        Task<RegisterResponse> RegisterAdminOrDeveloperAsync(RegisterViewModel request, string role);
+
     }
 }

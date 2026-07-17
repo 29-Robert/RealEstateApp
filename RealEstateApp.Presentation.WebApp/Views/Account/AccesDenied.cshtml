@@ -1,0 +1,47 @@
+﻿@{
+    ViewData["Title"] = "Acceso Denegado";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center align-items-center" style="min-height: 65vh;">
+        <div class="col-md-7 col-lg-6 text-center">
+
+            @* Icono Visual de Advertencia *@
+            <div class="mb-4">
+                <i class="bi bi-shield-lock-fill text-danger" style="font-size: 6rem; filter: drop-shadow(0px 4px 10px rgba(220, 53, 69, 0.2));"></i>
+            </div>
+
+            @* Mensajes de Error *@
+            <h1 class="fw-black text-dark display-5 mb-3">Acceso Restringido</h1>
+            <p class="text-muted fs-5 mb-4">
+                Lo sentimos, no tienes los permisos necesarios para visualizar el contenido de esta sección.
+                Cada rol dentro de <strong>RealEstateApp</strong> tiene áreas de trabajo específicas asignadas.
+            </p>
+
+            @* Caja informativa de seguridad *@
+            <div class="alert alert-warning border-0 shadow-sm rounded-3 p-3 mb-5 text-start d-inline-block w-100">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-3 me-3"></i>
+                    <div>
+                        <span class="fw-bold d-block text-dark">¿Por qué veo esto?</span>
+                        <small class="text-muted">Si iniciaste sesión con una cuenta de Cliente o Agente, no puedes acceder a los módulos administrativos del sistema.</small>
+                    </div>
+                </div>
+            </div>
+
+            @* Botones de Acción / Retorno Seguro *@
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-primary fw-bold px-4 py-2 rounded-2">
+                    <i class="bi bi-house-door-fill me-2"></i> Ir al Inicio Principal
+                </a>
+
+                <form asp-controller="Account" asp-action="LogOut" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-secondary fw-semibold px-4 py-2 rounded-2 w-100">
+                        <i class="bi bi-box-arrow-right me-2"></i> Cambiar de Cuenta
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>

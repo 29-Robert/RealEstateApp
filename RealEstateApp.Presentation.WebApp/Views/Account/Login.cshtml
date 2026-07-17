@@ -1,0 +1,103 @@
+﻿@using RealEstateApp.Application.ViewModels.Users
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow border-0 rounded-3">
+                <div class="card-body p-4 p-sm-5">
+
+                    <h2 class="card-title text-center fw-bold mb-4 text-primary">Bienvenido</h2>
+                    <p class="text-muted text-center mb-4">Ingresa tus credenciales para acceder al sistema</p>
+
+                    @* ========================================== *@
+                    @* MANEJO DE ALERTAS Y ERRORES                *@
+                    @* ========================================== *@
+
+                    @* 1. Alertas de éxito (Registro correcto o activación de cuenta) *@
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ActivationResult"] != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <i class="bi bi-info-circle-fill me-2"></i> @TempData["ActivationResult"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @* 2. Alerta para los errores de Identity (Contraseña incorrecta, usuario inactivo, etc.) *@
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show d-none" role="alert" id="identity-error-summary">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    @* ========================================== *@
+                    @* FORMULARIO DE ACCESO                       *@
+                    @* ========================================== *@
+                    <form asp-controller="Account" asp-action="Login" method="post" novalidate>
+
+                        @* Campo: Correo Electrónico *@
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-semibold">Correo Electrónico</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
+                                <input asp-for="Email" class="form-control" placeholder="ejemplo@correo.com" autocomplete="email" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        @* Campo: Contraseña *@
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label fw-semibold">Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        @* Botón de Enviar *@
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-2 mb-3">
+                            Iniciar Sesión <i class="bi bi-box-arrow-in-right ms-1"></i>
+                        </button>
+
+                    </form>
+
+                    <hr class="text-muted my-4">
+
+                    @* Enlace al Registro *@
+                    <div class="text-center">
+                        <p class="mb-0 text-muted">¿No tienes una cuenta aún?</p>
+                        <a asp-controller="Account" asp-action="Register" class="text-decoration-none fw-bold text-primary">Regístrate aquí como Cliente o Agente</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // Truco con JS para mostrar la alerta de Bootstrap solo si el Validation Summary contiene errores reales de Identity
+        document.addEventListener("DOMContentLoaded", function () {
+            var summary = document.getElementById("identity-error-summary");
+            if (summary && summary.innerText.trim().length > 0) {
+                summary.classList.remove("d-none");
+            }
+        });
+    </script>
+}
