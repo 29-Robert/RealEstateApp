@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using RealEstateApp.Domain.Enums; // Para usar tu Enum de Roles
+using RealEstateApp.Domain.Enums; 
 using RealEstateApp.Infrastructure.Identity.Entities;
 using System.Data;
 

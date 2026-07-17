@@ -8,6 +8,7 @@
         public List<string> Roles { get; set; } = new();
         public bool IsActive { get; set; }
         public bool HasError { get; set; }
+        public string? JWToken { get; set; }
         public string? ErrorDescription { get; set; }
     }
 }
