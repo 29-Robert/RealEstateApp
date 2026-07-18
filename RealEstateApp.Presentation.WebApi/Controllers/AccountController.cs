@@ -60,5 +60,41 @@ namespace RealEstateApp.Presentation.WebApi.Controllers
             }
             return Created(string.Empty, new { Message = "Desarrollador registrado exitosamente." });
         }
+
+
+        [HttpPost("authenticate")]
+        public async Task<IActionResult> Authenticate([FromBody] LoginViewModel request)
+        {
+            var response = await _accountService.AuthenticateAsync(request);
+
+            if(response.HasError)
+            {
+                return BadRequest(new { Error = response.ErrorDescription });
+            }
+
+
+            return Ok(response);
+        }
+
+        [HttpGet("agents")]
+        public async Task<IActionResult> GetAgentsAsync()
+        {
+            var agents = await _accountService.GetAgentsListAsync();
+            return Ok(agents);
+        }
+
+        [HttpPatch("agents/changestatus")]
+        public async Task<IActionResult> ChangeAgentStatusAsync([FromQuery] string agentId)
+        {
+            try
+            {
+                await _accountService.ToggleAgentStatusAsync(agentId);
+                return Ok(new { Message = "El estado del agente ha sido modificado exitosamente." });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Error = ex.Message });
+            }
+        }
     }
 }

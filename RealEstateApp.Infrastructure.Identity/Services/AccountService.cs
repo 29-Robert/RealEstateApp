@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
@@ -10,12 +11,9 @@ using RealEstateApp.Application.ViewModels.Users;
 using RealEstateApp.Domain.Enums;
 using RealEstateApp.Domain.Settings;
 using RealEstateApp.Infrastructure.Identity.Entities;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RealEstateApp.Infrastructure.Identity.Services
 {
@@ -40,12 +38,12 @@ namespace RealEstateApp.Infrastructure.Identity.Services
         }
 
         // 1. PROCESO DE LOGIN
-        public async Task<AuthenticationResponse> AuthenticateAsync(LoginViewModel loginVm)
+        public async Task<AuthenticationResponseDto> AuthenticateAsync(LoginViewModel loginVm)
         {
             var user = await _userManager.FindByEmailAsync(loginVm.Email);
             if (user == null)
             {
-                return new AuthenticationResponse { HasError = true, ErrorDescription = "Credenciales incorrectas." };
+                return new AuthenticationResponseDto { HasError = true, ErrorDescription = "Credenciales incorrectas." };
             }
 
             // Cambiado a false fíjamente por el requerimiento de quitar el "Recordarme"
@@ -53,25 +51,38 @@ namespace RealEstateApp.Infrastructure.Identity.Services
 
             if (!result.Succeeded)
             {
-                return new AuthenticationResponse { HasError = true, ErrorDescription = "Credenciales incorrectas." };
+                return new AuthenticationResponseDto { HasError = true, ErrorDescription = "Credenciales incorrectas." };
             }
 
             if (!user.EmailConfirmed)
             {
-                return new AuthenticationResponse { HasError = true, ErrorDescription = "Debes activar tu cuenta por correo antes de iniciar sesión." };
+                return new AuthenticationResponseDto { HasError = true, ErrorDescription = "Debes activar tu cuenta por correo antes de iniciar sesión." };
             }
 
             // Buscamos los roles asignados al usuario en Identity
             var roles = await _userManager.GetRolesAsync(user);
 
-            var response = new AuthenticationResponse
+            var response = new AuthenticationResponseDto
             {
                 Id = user.Id,
                 Email = user.Email!,
                 UserName = user.UserName!,
                 Roles = new List<string>(roles),
                 HasError = false
-            };
+            };  
+
+            if (user != null)
+            {
+                var userRoles = await _userManager.GetRolesAsync(user);
+
+                if (userRoles.Contains("Agente") && !user.IsActive)
+                {
+
+                    response.HasError = true;
+                    response.ErrorDescription = "Su cuenta de agente ha sido inactivada por el administrador. No puede iniciar sesión.";
+                    return response;
+                }
+            }
 
             // =======================================================
             // GENERACIÓN DEL TOKEN JWT PARA LA API REST
@@ -111,9 +122,9 @@ namespace RealEstateApp.Infrastructure.Identity.Services
         }
         
         // 2. PROCESO DE REGISTRO DIFERENCIADO (CLIENTES VS AGENTES)
-        public async Task<RegisterResponse> RegisterUserAsync(RegisterViewModel registerVm, string origin)
+        public async Task<RegisterResponseDto> RegisterUserAsync(RegisterViewModel registerVm, string origin)
         {
-            var response = new RegisterResponse();
+            var response = new RegisterResponseDto();
 
             // Validar que el rol solicitado sea permitido de forma pública
             if (registerVm.UserType != Roles.Cliente.ToString() && registerVm.UserType != Roles.Agente.ToString()) 
@@ -222,18 +233,18 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             return url;
         }
 
-        public async Task<RegisterResponse> RegisterAdminOrDeveloperAsync(RegisterViewModel request, string role)
+        public async Task<RegisterResponseDto> RegisterAdminOrDeveloperAsync(RegisterViewModel request, string role)
         {
             var userWithSameEmail = await _userManager.FindByEmailAsync(request.Email);
             if (userWithSameEmail != null)
             {
-                return new RegisterResponse { HasError = true, ErrorDescription = $"El correo '{request.Email}' ya está registrado." };
+                return new RegisterResponseDto { HasError = true, ErrorDescription = $"El correo '{request.Email}' ya está registrado." };
             }
 
             var userWithSameUsername = await _userManager.FindByNameAsync(request.Username);
             if (userWithSameUsername != null)
             {
-                return new RegisterResponse { HasError = true, ErrorDescription = $"El nombre de usuario '{request.Username}' ya está en uso." };
+                return new RegisterResponseDto { HasError = true, ErrorDescription = $"El nombre de usuario '{request.Username}' ya está en uso." };
             }
 
             var user = new ApplicationUser
@@ -254,12 +265,68 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 {
                     errors.AppendLine(error.Description);
                 }
-                return new RegisterResponse { HasError = true, ErrorDescription = errors.ToString() };
+                return new RegisterResponseDto { HasError = true, ErrorDescription = errors.ToString() };
             }
 
             await _userManager.AddToRoleAsync(user, role);
 
-            return new RegisterResponse { HasError = false };
+            return new RegisterResponseDto { HasError = false };
+        }
+
+        public async Task<List<UserResponseDto>> GetUsersInRoleAsync(string role)
+        {
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role);
+            var userList = new List<UserResponseDto>();
+
+            foreach (var user in usersInRole)
+            {
+                userList.Add(new UserResponseDto
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email!,
+                    UserName = user.UserName!
+                });
+            }
+
+            return userList;
+        }
+
+        public async Task ToggleAgentStatusAsync(string agentId)
+        {
+            var user = await _userManager.FindByIdAsync(agentId);
+
+            if (user == null)
+            {
+                throw new KeyNotFoundException("El agente especificado no existe en el sistema.");
+            }
+
+            user.IsActive = !user.IsActive;
+
+            await _userManager.UpdateAsync(user);
+        }
+
+        public async Task<List<AgentResponseDto>> GetAgentsListAsync()
+        {
+            var agentsInRole = await _userManager.GetUsersInRoleAsync("Agente");
+            var agentList = new List<AgentResponseDto>();
+
+            foreach (var user in agentsInRole)
+            {
+                agentList.Add(new AgentResponseDto
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email!,
+                    PhoneNumber = user.PhoneNumber!,
+                    IsActive = user.IsActive,
+                    PropertyCount = 0 //
+                });
+            }
+
+            return agentList;
         }
     }
 }
