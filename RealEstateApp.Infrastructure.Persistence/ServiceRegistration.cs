@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RealEstateApp.Application.Interfaces.Repositories;
@@ -19,6 +19,8 @@ namespace RealEstateApp.Infrastructure.Persistence
             services.AddTransient<IPropertyTypeRepository, PropertyTypeRepository>();
             services.AddTransient<ISaleTypeRepository, SaleTypeRepository>();
             services.AddTransient<IImprovementRepository, ImprovementRepository>();
+            services.AddTransient<IPropertyRepository, PropertyRepository>();
+            services.AddTransient<IPropertyImageRepository, PropertyImageRepository>();
         }
     }
 }

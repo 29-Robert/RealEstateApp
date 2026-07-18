@@ -1,0 +1,125 @@
+@using RealEstateApp.Infrastructure.Identity.Entities
+@model List<(RealEstateApp.Infrastructure.Identity.Entities.ApplicationUser Agent, int PropertyCount)>
+
+@{
+    ViewData["Title"] = "Agentes inmobiliarios";
+}
+
+<style>
+    .agent-card {
+        border: none;
+        border-radius: 16px;
+        transition: transform 0.3s, box-shadow 0.3s;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+        overflow: hidden;
+    }
+    .agent-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.14);
+    }
+    .agent-avatar {
+        width: 90px;
+        height: 90px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid #0d6efd;
+    }
+    .agent-avatar-placeholder {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        color: white;
+        margin: 0 auto;
+        border: 4px solid #0d6efd;
+    }
+    .hero-agents {
+        background: linear-gradient(135deg, #1e3a5f, #0d6efd);
+        color: white;
+        padding: 50px 0 30px;
+    }
+</style>
+
+<section class="hero-agents mb-5">
+    <div class="container">
+        <h1 class="fw-bold"><i class="bi bi-people-fill me-2"></i>Nuestros Agentes</h1>
+        <p class="lead opacity-75">Conoce a los profesionales que pueden ayudarte a encontrar tu hogar ideal</p>
+
+        <form method="get" class="mt-3">
+            <div class="input-group" style="max-width: 420px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="search" value="@ViewBag.Search"
+                       class="form-control border-start-0" placeholder="Buscar agente por nombre...">
+                <button class="btn btn-light" type="submit">Buscar</button>
+                @if (!string.IsNullOrEmpty(ViewBag.Search?.ToString()))
+                {
+                    <a asp-action="Index" class="btn btn-outline-light">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="container mb-5">
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-person-x" style="font-size:4rem;color:#dee2e6;"></i>
+            <h5 class="text-muted mt-3">No se encontraron agentes@(ViewBag.Search != null ? $" con el nombre \"{ViewBag.Search}\"" : "").</h5>
+            @if (ViewBag.Search != null)
+            {
+                <a asp-action="Index" class="btn btn-outline-primary mt-2">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Ver todos los agentes
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var (agent, propertyCount) in Model)
+            {
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card agent-card h-100 text-center p-4">
+                        @if (!string.IsNullOrEmpty(agent.PhotoPath))
+                        {
+                            <img src="@agent.PhotoPath" alt="@agent.FirstName" class="agent-avatar mx-auto mb-3">
+                        }
+                        else
+                        {
+                            <div class="agent-avatar-placeholder mb-3">
+                                <i class="bi bi-person"></i>
+                            </div>
+                        }
+
+                        <h5 class="fw-bold mb-1">@agent.FirstName @agent.LastName</h5>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-envelope me-1"></i>@agent.Email
+                        </p>
+                        @if (!string.IsNullOrEmpty(agent.PhoneNumber))
+                        {
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-telephone me-1"></i>@agent.PhoneNumber
+                            </p>
+                        }
+
+                        <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 mb-3">
+                            <i class="bi bi-house me-1"></i>@propertyCount propiedad(es) disponible(s)
+                        </div>
+
+                        <a asp-action="Properties" asp-route-agentId="@agent.Id"
+                           class="btn btn-outline-primary w-100 mt-auto">
+                            <i class="bi bi-eye me-2"></i>Ver propiedades
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,223 @@
+@using RealEstateApp.Application.DTOs.Property
+@model PropertyDetailDto
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<style>
+    .detail-hero {
+        background: linear-gradient(to bottom, #1e3a5f, #0d6efd);
+        color: white;
+        padding: 30px 0;
+    }
+    .carousel-img {
+        height: 450px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+    .spec-badge {
+        background: #f0f4ff;
+        border-radius: 12px;
+        padding: 16px 20px;
+        text-align: center;
+    }
+    .spec-badge i { font-size: 1.6rem; color: #0d6efd; }
+    .spec-badge .value { font-size: 1.4rem; font-weight: 700; }
+    .spec-badge .label { font-size: 0.78rem; color: #6c757d; }
+    .improvement-chip {
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        border-radius: 20px;
+        padding: 6px 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #2e7d32;
+        display: inline-block;
+        margin: 3px;
+    }
+    .agent-card {
+        border-radius: 16px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+        overflow: hidden;
+    }
+    .agent-photo {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid #0d6efd;
+    }
+    .agent-photo-placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        border: 3px solid #0d6efd;
+    }
+    .price-display {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #0d6efd;
+    }
+</style>
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Propiedades</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <!-- Columna principal -->
+        <div class="col-lg-8">
+
+            <!-- Carrusel de imágenes -->
+            @if (Model.ImagePaths != null && Model.ImagePaths.Any())
+            {
+                <div id="propertyCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        @for (int i = 0; i < Model.ImagePaths.Count; i++)
+                        {
+                            <button type="button" data-bs-target="#propertyCarousel" data-bs-slide-to="@i"
+                                    class="@(i == 0 ? "active" : "")" aria-current="@(i == 0 ? "true" : "false")"></button>
+                        }
+                    </div>
+                    <div class="carousel-inner rounded-3 shadow">
+                        @for (int i = 0; i < Model.ImagePaths.Count; i++)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                <img src="@Model.ImagePaths[i]" class="carousel-img d-block w-100" alt="Imagen @(i+1)">
+                            </div>
+                        }
+                    </div>
+                    @if (Model.ImagePaths.Count > 1)
+                    {
+                        <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon"></span>
+                        </button>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="bg-light rounded-3 d-flex align-items-center justify-content-center mb-4" style="height:350px;">
+                    <i class="bi bi-image text-muted" style="font-size:4rem;"></i>
+                </div>
+            }
+
+            <!-- Título y precio -->
+            <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+                <div>
+                    <div class="d-flex gap-2 mb-2">
+                        <span class="badge bg-primary fs-6">@Model.SaleTypeName</span>
+                        <span class="badge bg-success fs-6">@Model.PropertyTypeName</span>
+                        <span class="badge bg-secondary fs-6">Cód. @Model.Code</span>
+                    </div>
+                    <h1 class="h2 fw-bold mb-0">@Model.Title</h1>
+                </div>
+                <div class="price-display mt-2">$@Model.Price.ToString("N2")</div>
+            </div>
+
+            <!-- Especificaciones -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-door-open d-block mb-2"></i>
+                        <div class="value">@Model.Rooms</div>
+                        <div class="label">Habitaciones</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-droplet d-block mb-2"></i>
+                        <div class="value">@Model.Bathrooms</div>
+                        <div class="label">Baños</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-rulers d-block mb-2"></i>
+                        <div class="value">@Model.Size</div>
+                        <div class="label">m² de terreno</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-check-circle d-block mb-2"></i>
+                        <div class="value" style="font-size:1rem;">@Model.Status</div>
+                        <div class="label">Estado</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-4">
+                <h4 class="fw-bold mb-3"><i class="bi bi-file-text me-2 text-primary"></i>Descripción</h4>
+                <p class="text-muted lh-lg">@Model.Description</p>
+            </div>
+
+            <!-- Mejoras -->
+            @if (Model.Improvements != null && Model.Improvements.Any())
+            {
+                <div class="mb-4">
+                    <h4 class="fw-bold mb-3"><i class="bi bi-tools me-2 text-primary"></i>Mejoras incluidas</h4>
+                    <div>
+                        @foreach (var improvement in Model.Improvements)
+                        {
+                            <span class="improvement-chip">
+                                <i class="bi bi-check2 me-1"></i>@improvement
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar del Agente -->
+        <div class="col-lg-4">
+            <div class="card agent-card sticky-top" style="top: 80px;">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Agente responsable</h5>
+                </div>
+                <div class="card-body text-center p-4">
+                    @if (!string.IsNullOrEmpty(Model.AgentPhotoPath))
+                    {
+                        <img src="@Model.AgentPhotoPath" alt="Agente" class="agent-photo mb-3">
+                    }
+                    else
+                    {
+                        <div class="agent-photo-placeholder mx-auto mb-3">
+                            <i class="bi bi-person"></i>
+                        </div>
+                    }
+
+                    <h5 class="fw-bold mb-1">@Model.AgentFullName</h5>
+                    <p class="text-muted small mb-3">Agente de Bienes Raíces</p>
+
+                    @if (!string.IsNullOrEmpty(Model.AgentPhone))
+                    {
+                        <a href="tel:@Model.AgentPhone" class="btn btn-success w-100 mb-2">
+                            <i class="bi bi-telephone me-2"></i>@Model.AgentPhone
+                        </a>
+                    }
+
+                    <a asp-controller="Agent" asp-action="Properties"
+                       asp-route-agentId="@Model.AgentId"
+                       class="btn btn-outline-primary w-100">
+                        <i class="bi bi-houses me-2"></i>Ver más propiedades del agente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
