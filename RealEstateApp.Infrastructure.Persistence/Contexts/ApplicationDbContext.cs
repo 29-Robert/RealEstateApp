@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RealEstateApp.Domain.Entities;
 
 namespace RealEstateApp.Infrastructure.Persistence.Contexts
@@ -9,6 +9,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
         public DbSet<PropertyType> PropertyTypes { get; set; }
         public DbSet<SaleType> SaleTypes { get; set; }
         public DbSet<Improvement> Improvements { get; set; }
+        public DbSet<PropertyImage> PropertyImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,6 +29,9 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
             modelBuilder.Entity<Improvement>()
                 .ToTable("Improvements");
 
+            modelBuilder.Entity<PropertyImage>()
+                .ToTable("PropertyImages");
+
             modelBuilder.Entity<PropertyType>()
                 .HasMany<Property>(pt => pt.Properties)
                 .WithOne(p => p.PropertyType)
@@ -44,6 +48,12 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
                 .HasMany<Improvement>(p => p.Improvements)
                 .WithMany(i => i.Properties)
                 .UsingEntity(j => j.ToTable("PropertyImprovements"));
+
+            modelBuilder.Entity<Property>()
+                .HasMany<PropertyImage>(p => p.PropertyImages)
+                .WithOne(pi => pi.Property)
+                .HasForeignKey(pi => pi.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
-}
+}
