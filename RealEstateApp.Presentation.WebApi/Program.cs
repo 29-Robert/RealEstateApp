@@ -1,27 +1,37 @@
 using RealEstateApp.Application;
-using RealEstateApp.Infrastructure.Persistence;
 using RealEstateApp.Infrastructure.Identity;
-using RealEstateApp.Infrastructure.Identity.Seeds;
-using RealEstateApp.Infrastructure.Shared;
-using Microsoft.AspNetCore.Identity;
 using RealEstateApp.Infrastructure.Identity.Entities;
+using RealEstateApp.Infrastructure.Identity.Seeds;
+using RealEstateApp.Infrastructure.Persistence;
+using RealEstateApp.Infrastructure.Shared;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================
-// REGISTRO DE CAPAS DE LA ARQUITECTURA CEBOLLA
-// ==========================================
 builder.Services.AddApplicationLayer();
 builder.Services.AddPersistenceInfrastructure(builder.Configuration);
 builder.Services.AddSharedLayerIoc(builder.Configuration);
+
+// Nota: Se asume que la configuración de AddAuthentication y JWT 
+// se ejecuta internamente dentro de este método de extensión.
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // ==========================================
-// CONFIGURACIÓN DE SWAGGER CON SOPORTE PARA JWT
+// NUEVO: POLÍTICA DE CORS (Evita bloqueos con la WebApp)
 // ==========================================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("WebAppPolicy", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
@@ -91,6 +101,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseCors("WebAppPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

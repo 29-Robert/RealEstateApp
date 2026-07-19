@@ -6,8 +6,10 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RealEstateApp.Application.DTOs.Account;
 using RealEstateApp.Application.DTOs.Email;
+using RealEstateApp.Application.Interfaces.Repositories; 
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Application.ViewModels.Users;
+using RealEstateApp.Domain.Entities;
 using RealEstateApp.Domain.Enums;
 using RealEstateApp.Domain.Settings;
 using RealEstateApp.Infrastructure.Identity.Entities;
@@ -23,18 +25,21 @@ namespace RealEstateApp.Infrastructure.Identity.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly JWTSettings _jwtSettings;
         private readonly IEmailService _emailService;
+        private readonly IGenericRepository<Property> _propertyRepository; 
 
 
         public AccountService(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             IOptions<JWTSettings> jwtSettings,
-            IEmailService emailService) 
+            IEmailService emailService,
+            IGenericRepository<Property> propertyRepository) 
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _jwtSettings = jwtSettings.Value;
             _emailService = emailService;
+            _propertyRepository = propertyRepository; 
         }
 
         // 1. PROCESO DE LOGIN
@@ -46,7 +51,6 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 return new AuthenticationResponseDto { HasError = true, ErrorDescription = "Credenciales incorrectas." };
             }
 
-            // Cambiado a false fíjamente por el requerimiento de quitar el "Recordarme"
             var result = await _signInManager.PasswordSignInAsync(user.UserName!, loginVm.Password, false, lockoutOnFailure: false);
 
             if (!result.Succeeded)
@@ -62,6 +66,15 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             // Buscamos los roles asignados al usuario en Identity
             var roles = await _userManager.GetRolesAsync(user);
 
+            if (roles.Contains("Agente") && !user.IsActive)
+            {
+                return new AuthenticationResponseDto
+                {
+                    HasError = true,
+                    ErrorDescription = "Su cuenta de agente ha sido inactivada por el administrador. No puede iniciar sesión."
+                };
+            }
+
             var response = new AuthenticationResponseDto
             {
                 Id = user.Id,
@@ -69,20 +82,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 UserName = user.UserName!,
                 Roles = new List<string>(roles),
                 HasError = false
-            };  
-
-            if (user != null)
-            {
-                var userRoles = await _userManager.GetRolesAsync(user);
-
-                if (userRoles.Contains("Agente") && !user.IsActive)
-                {
-
-                    response.HasError = true;
-                    response.ErrorDescription = "Su cuenta de agente ha sido inactivada por el administrador. No puede iniciar sesión.";
-                    return response;
-                }
-            }
+            };
 
             // =======================================================
             // GENERACIÓN DEL TOKEN JWT PARA LA API REST
@@ -90,7 +90,6 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_jwtSettings.Key);
 
-            // Definimos los Claims (los datos integrados cifrados dentro del token)
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -98,7 +97,6 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 new Claim(ClaimTypes.Name, user.UserName!)
             };
 
-            // Agregamos cada rol correspondiente del usuario a los claims
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
@@ -114,27 +112,23 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
-
-            // Asignamos el string generado a la propiedad de la respuesta
             response.JWToken = tokenHandler.WriteToken(token);
 
             return response;
         }
-        
+
         // 2. PROCESO DE REGISTRO DIFERENCIADO (CLIENTES VS AGENTES)
         public async Task<RegisterResponseDto> RegisterUserAsync(RegisterViewModel registerVm, string origin)
         {
             var response = new RegisterResponseDto();
 
-            // Validar que el rol solicitado sea permitido de forma pública
-            if (registerVm.UserType != Roles.Cliente.ToString() && registerVm.UserType != Roles.Agente.ToString()) 
+            if (registerVm.UserType != Roles.Cliente.ToString() && registerVm.UserType != Roles.Agente.ToString())
             {
                 response.HasError = true;
                 response.ErrorDescription = "Acción no permitida. Solo se permite el registro público de Clientes y Agentes.";
                 return response;
             }
 
-            // Validar si el nombre de usuario o correo ya existen
             var userByUsername = await _userManager.FindByNameAsync(registerVm.Username);
             if (userByUsername != null)
             {
@@ -151,7 +145,6 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 return response;
             }
 
-            // Crear la instancia de nuestro usuario personalizado
             var newUser = new ApplicationUser
             {
                 FirstName = registerVm.FirstName,
@@ -159,11 +152,9 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 Email = registerVm.Email,
                 UserName = registerVm.Username,
                 PhoneNumber = registerVm.PhoneNumber,
-                // Si es Cliente empieza inactivo (hasta confirmar correo). Si es Agente empieza inactivo (hasta aprobación manual).
                 IsActive = false
             };
 
-            // Intentar registrar el usuario en la base de datos
             var result = await _userManager.CreateAsync(newUser, registerVm.Password);
 
             if (!result.Succeeded)
@@ -173,11 +164,9 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 return response;
             }
 
-            // Asignar el Rol correspondiente en la tabla intermedia de Identity
             await _userManager.AddToRoleAsync(newUser, registerVm.UserType);
 
-            // FLUJO DIFERENCIADO: Envío de correo electrónico exclusivamente a Clientes
-            if (registerVm.UserType == Roles.Cliente.ToString()) 
+            if (registerVm.UserType == Roles.Cliente.ToString())
             {
                 var verificationUrl = await GenerateVerificationUrl(newUser, origin);
 
@@ -207,14 +196,11 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 return "No se encontró el usuario para activar la cuenta.";
             }
 
-            // Decodificar el token web seguro recibido por URL
             var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
-
-            // Confirmar el token con Identity
             var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
             if (result.Succeeded)
             {
-                user.IsActive = true; // Activamos al usuario en el sistema
+                user.IsActive = true;
                 await _userManager.UpdateAsync(user);
                 return "Cuenta activada exitosamente. Ya puedes iniciar sesión.";
             }
@@ -222,7 +208,6 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             return "Ocurrió un error intentando validar el token de activación.";
         }
 
-        // MÉTODOS AUXILIARES: Generación segura de la URL de activación
         private async Task<string> GenerateVerificationUrl(ApplicationUser user, string origin)
         {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -253,7 +238,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 UserName = request.Username,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                EmailConfirmed = true 
+                EmailConfirmed = true
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -312,8 +297,15 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             var agentsInRole = await _userManager.GetUsersInRoleAsync("Agente");
             var agentList = new List<AgentResponseDto>();
 
+            var properties = await _propertyRepository.GetAllAsync();
+
             foreach (var user in agentsInRole)
             {
+                // Contamos las propiedades asociadas a este Agente.
+                // Nota: Si en 'Property.cs' el Dev B usó un nombre de campo diferente a 'AgentId' 
+                // (como 'CreatedBy' o 'UsuarioId'), solo debes reemplazar 'AgentId' por ese nombre aquí abajo.
+                int count = properties.Count(p => p.AgentId == user.Id);
+
                 agentList.Add(new AgentResponseDto
                 {
                     Id = user.Id,
@@ -322,11 +314,42 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                     Email = user.Email!,
                     PhoneNumber = user.PhoneNumber!,
                     IsActive = user.IsActive,
-                    PropertyCount = 0 //
+                    PropertyCount = count
                 });
             }
 
             return agentList;
+        }
+
+        public async Task<AdminDashboardResponseDto> GetAdminDashboardStatsAsync()
+        {
+            // 1. Clasificación y conteo de usuarios desde ASP.NET Identity
+            var agents = await _userManager.GetUsersInRoleAsync("Agente");
+            var clients = await _userManager.GetUsersInRoleAsync("Cliente");
+            var developers = await _userManager.GetUsersInRoleAsync("Desarrollador");
+            var admins = await _userManager.GetUsersInRoleAsync("Administrador");
+
+            // 2. Extracción de inventario comercial
+            var properties = await _propertyRepository.GetAllAsync();
+
+            // 3. Mapeo y cálculo consolidado del DTO
+            return new AdminDashboardResponseDto
+            {
+                AgentesActivos = agents.Count(u => u.IsActive),
+                AgentesInactivos = agents.Count(u => !u.IsActive),
+
+                ClientesActivos = clients.Count(u => u.IsActive),
+                ClientesInactivos = clients.Count(u => !u.IsActive),
+
+                DesarroladoresActivos = developers.Count(u => u.IsActive),
+                DesarroladoresInactivos = developers.Count(u => !u.IsActive),
+
+                AdministradoresActivos = admins.Count(u => u.IsActive),
+                AdministradoresInactivos = admins.Count(u => !u.IsActive),
+
+                AvailableProperties = properties.Count(p => p.Status == "Disponible"),
+                SoldProperties = properties.Count(p => p.Status == "Vendida")
+            };
         }
     }
 }
