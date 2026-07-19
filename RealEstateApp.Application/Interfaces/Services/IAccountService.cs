@@ -5,11 +5,17 @@ namespace RealEstateApp.Application.Interfaces.Services
 {
     public interface IAccountService
     {
-        Task<AuthenticationResponse> AuthenticateAsync(LoginViewModel loginVm);
-        Task<RegisterResponse> RegisterUserAsync(RegisterViewModel registerVm, string origin);
+        Task<AuthenticationResponseDto> AuthenticateAsync(LoginViewModel loginVm);
+        Task<RegisterResponseDto> RegisterUserAsync(RegisterViewModel registerVm, string origin);
         Task<string> ConfirmEmailAsync(string userId, string token);
         Task SignOutAsync();
-        Task<RegisterResponse> RegisterAdminOrDeveloperAsync(RegisterViewModel request, string role);
+        Task<RegisterResponseDto> RegisterAdminOrDeveloperAsync(RegisterViewModel request, string role);
+        Task<List<UserResponseDto>> GetUsersInRoleAsync(string role);
+        
+        Task ToggleAgentStatusAsync(string agentId);
+        Task<List<AgentResponseDto>> GetAgentsListAsync();
+        Task<AdminDashboardResponseDto> GetAdminDashboardStatsAsync();
+
 
     }
 }
