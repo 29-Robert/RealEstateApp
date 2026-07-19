@@ -1,0 +1,138 @@
+@using RealEstateApp.Application.DTOs.Property
+@model List<PropertyDto>
+
+@{
+    ViewData["Title"] = $"Propiedades de {ViewBag.AgentName}";
+}
+
+<style>
+    .agent-banner {
+        background: linear-gradient(135deg, #1e3a5f, #0d6efd);
+        color: white;
+        padding: 40px 0 30px;
+    }
+    .property-card {
+        border: none;
+        border-radius: 14px;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .property-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 14px 35px rgba(0,0,0,0.14);
+    }
+    .property-img {
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+    .price-tag { font-size: 1.2rem; font-weight: 700; color: #0d6efd; }
+    .agent-avatar {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid white;
+    }
+    .agent-avatar-placeholder {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        border: 3px solid white;
+    }
+</style>
+
+<section class="agent-banner mb-5">
+    <div class="container d-flex align-items-center gap-4">
+        @if (!string.IsNullOrEmpty(ViewBag.AgentPhoto?.ToString()))
+        {
+            <img src="@ViewBag.AgentPhoto" alt="@ViewBag.AgentName" class="agent-avatar">
+        }
+        else
+        {
+            <div class="agent-avatar-placeholder">
+                <i class="bi bi-person"></i>
+            </div>
+        }
+        <div>
+            <h1 class="fw-bold mb-1">@ViewBag.AgentName</h1>
+            <p class="opacity-75 mb-1">
+                <i class="bi bi-envelope me-1"></i>@ViewBag.AgentEmail
+                @if (!string.IsNullOrEmpty(ViewBag.AgentPhone?.ToString()))
+                {
+                    <span class="ms-3"><i class="bi bi-telephone me-1"></i>@ViewBag.AgentPhone</span>
+                }
+            </p>
+        </div>
+    </div>
+</section>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0 text-muted">
+            <i class="bi bi-houses me-2"></i>@Model.Count propiedad(es) disponible(s)
+        </h5>
+        <a asp-controller="Agent" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver a agentes
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-house-x" style="font-size:4rem;color:#dee2e6;"></i>
+            <h5 class="text-muted mt-3">Este agente no tiene propiedades disponibles actualmente.</h5>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var property in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card property-card h-100">
+                        <a asp-controller="Home" asp-action="Details" asp-route-id="@property.Id"
+                           class="text-decoration-none">
+                            @if (!string.IsNullOrEmpty(property.MainImagePath))
+                            {
+                                <img src="@property.MainImagePath" alt="@property.Title" class="property-img">
+                            }
+                            else
+                            {
+                                <div class="property-img bg-light d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-image text-muted" style="font-size:3rem;"></i>
+                                </div>
+                            }
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex gap-2 mb-2">
+                                <span class="badge bg-primary">@property.SaleTypeName</span>
+                                <span class="badge bg-success">@property.PropertyTypeName</span>
+                            </div>
+                            <h5 class="fw-semibold mb-1">@property.Title</h5>
+                            <div class="price-tag mb-3">$@property.Price.ToString("N2")</div>
+                            <div class="text-muted small mb-3 d-flex gap-3">
+                                <span><i class="bi bi-door-open me-1"></i>@property.Rooms</span>
+                                <span><i class="bi bi-droplet me-1"></i>@property.Bathrooms</span>
+                                <span><i class="bi bi-rulers me-1"></i>@property.Size m²</span>
+                            </div>
+                            <div class="mt-auto">
+                                <a asp-controller="Home" asp-action="Details" asp-route-id="@property.Id"
+                                   class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-eye me-2"></i>Ver detalles
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

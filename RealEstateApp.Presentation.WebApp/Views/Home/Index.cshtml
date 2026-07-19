@@ -1,8 +1,231 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@using RealEstateApp.Application.DTOs.Property
+@model List<PropertyDto>
+
+@{
+    ViewData["Title"] = "Propiedades disponibles";
+    var propertyTypes = ViewBag.PropertyTypes as List<RealEstateApp.Application.ViewModels.PropertyTypes.PropertyTypeViewModel> ?? new();
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #1e3a5f 0%, #0d6efd 100%);
+        color: white;
+        padding: 60px 0 40px;
+    }
+    .search-bar {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .property-card {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .property-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+    }
+    .property-img {
+        height: 220px;
+        object-fit: cover;
+        width: 100%;
+    }
+    .property-img-placeholder {
+        height: 220px;
+        background: linear-gradient(135deg, #e9ecef, #dee2e6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: #adb5bd;
+    }
+    .badge-status-disponible {
+        background-color: #198754;
+        color: white;
+    }
+    .price-tag {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #0d6efd;
+    }
+    .specs-row {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .specs-row i { font-size: 1rem; }
+    .no-results-icon { font-size: 5rem; color: #dee2e6; }
+    .filter-label { font-weight: 600; font-size: 0.85rem; color: #495057; }
+</style>
+
+<!-- Hero + Filtros -->
+<section class="hero-section mb-4">
+    <div class="container">
+        <h1 class="display-6 fw-bold mb-1">
+            <i class="bi bi-houses me-2"></i>Encuentra tu propiedad ideal
+        </h1>
+        <p class="lead mb-4 opacity-75">Explora nuestro catálogo de propiedades disponibles</p>
+
+        <div class="search-bar">
+            <form method="get" asp-controller="Home" asp-action="Index">
+                <div class="row g-3 align-items-end">
+                    <!-- Búsqueda por código -->
+                    <div class="col-md-3">
+                        <label class="filter-label text-dark mb-1"><i class="bi bi-123 me-1"></i>Buscar por código</label>
+                        <input type="number" name="code" value="@ViewBag.Code"
+                               class="form-control" placeholder="Ej. 456789">
+                    </div>
+                    <!-- Tipo de propiedad -->
+                    <div class="col-md-3">
+                        <label class="filter-label text-dark mb-1"><i class="bi bi-tags me-1"></i>Tipo de propiedad</label>
+                        <select name="propertyTypeId" class="form-select">
+                            <option value="">Todos los tipos</option>
+                            @foreach (var type in propertyTypes)
+                            {
+                                <option value="@type.Id" @(ViewBag.SelectedTypeId?.ToString() == type.Id.ToString() ? "selected" : "")>
+                                    @type.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <!-- Precio mínimo -->
+                    <div class="col-md-2">
+                        <label class="filter-label text-dark mb-1"><i class="bi bi-cash me-1"></i>Precio min.</label>
+                        <input type="number" name="minPrice" value="@ViewBag.MinPrice"
+                               class="form-control" placeholder="$ Mínimo">
+                    </div>
+                    <!-- Precio máximo -->
+                    <div class="col-md-2">
+                        <label class="filter-label text-dark mb-1"><i class="bi bi-cash-stack me-1"></i>Precio máx.</label>
+                        <input type="number" name="maxPrice" value="@ViewBag.MaxPrice"
+                               class="form-control" placeholder="$ Máximo">
+                    </div>
+                    <!-- Botones -->
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i>Buscar
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Segunda fila de filtros -->
+                <div class="row g-3 mt-1">
+                    <div class="col-md-3">
+                        <label class="filter-label text-dark mb-1"><i class="bi bi-door-open me-1"></i>Habitaciones</label>
+                        <select name="rooms" class="form-select">
+                            <option value="">Cualquiera</option>
+                            @for (int i = 1; i <= 6; i++)
+                            {
+                                <option value="@i" @(ViewBag.Rooms?.ToString() == i.ToString() ? "selected" : "")>@i hab.</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="filter-label text-dark mb-1"><i class="bi bi-droplet me-1"></i>Baños</label>
+                        <select name="bathrooms" class="form-select">
+                            <option value="">Cualquiera</option>
+                            @for (int i = 1; i <= 6; i++)
+                            {
+                                <option value="@i" @(ViewBag.Bathrooms?.ToString() == i.ToString() ? "selected" : "")>@i baño(s)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<div class="container mb-5">
+
+    @if (TempData["SearchError"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["SearchError"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="text-center py-5">
+            <div class="no-results-icon mb-3"><i class="bi bi-house-x"></i></div>
+            <h4 class="text-muted">No se encontraron propiedades disponibles</h4>
+            <p class="text-muted">Intenta ajustar los filtros de búsqueda.</p>
+            <a asp-action="Index" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>Ver todas las propiedades
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0 text-muted">
+                <i class="bi bi-grid me-2"></i>@Model.Count propiedad(es) encontrada(s)
+            </h5>
+        </div>
+
+        <div class="row g-4">
+            @foreach (var property in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card property-card h-100">
+
+                        <!-- Imagen -->
+                        <a asp-action="Details" asp-route-id="@property.Id" class="text-decoration-none">
+                            @if (!string.IsNullOrEmpty(property.MainImagePath))
+                            {
+                                <img src="@property.MainImagePath" alt="@property.Title" class="property-img">
+                            }
+                            else
+                            {
+                                <div class="property-img-placeholder">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                            }
+                        </a>
+
+                        <div class="card-body d-flex flex-column">
+                            <!-- Badges -->
+                            <div class="d-flex gap-2 mb-2">
+                                <span class="badge bg-primary">@property.SaleTypeName</span>
+                                <span class="badge bg-success">@property.PropertyTypeName</span>
+                            </div>
+
+                            <!-- Título y precio -->
+                            <h5 class="card-title fw-semibold mb-1">@property.Title</h5>
+                            <div class="price-tag mb-3">
+                                $@property.Price.ToString("N2")
+                            </div>
+
+                            <!-- Especificaciones -->
+                            <div class="specs-row d-flex gap-3 mb-3">
+                                <span><i class="bi bi-door-open me-1"></i>@property.Rooms hab.</span>
+                                <span><i class="bi bi-droplet me-1"></i>@property.Bathrooms baños</span>
+                                <span><i class="bi bi-rulers me-1"></i>@property.Size m²</span>
+                            </div>
+
+                            <!-- Código -->
+                            <div class="text-muted small mb-3">
+                                <i class="bi bi-hash me-1"></i>Cód. <strong>@property.Code</strong>
+                            </div>
+
+                            <div class="mt-auto">
+                                <a asp-action="Details" asp-route-id="@property.Id"
+                                   class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-eye me-2"></i>Ver detalles
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 </div>
