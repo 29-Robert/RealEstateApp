@@ -98,5 +98,19 @@ namespace RealEstateApp.Presentation.WebApi.Controllers
             var stats = await _accountService.GetAdminDashboardStatsAsync();
             return Ok(stats);
         }
+
+        [HttpDelete("/api/agents/{id}")]
+        [Authorize(Roles = "Administrador", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> DeleteAgentAsync(string id)
+        {
+            var response = await _accountService.DeleteAgentAsync(id);
+
+            if (response.HasError)
+            {
+                return BadRequest(new { Error = response.ErrorDescription });
+            }
+
+            return Ok(new { Message = "El agente y todo su ecosistema de datos han sido eliminados de forma exitosa." });
+        }
     }
 }

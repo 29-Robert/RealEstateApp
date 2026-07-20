@@ -4,7 +4,7 @@ using RealEstateApp.Infrastructure.Identity.Entities;
 using RealEstateApp.Infrastructure.Identity.Seeds;
 using RealEstateApp.Infrastructure.Persistence;
 using RealEstateApp.Infrastructure.Shared;
-using System;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +16,12 @@ builder.Services.AddSharedLayerIoc(builder.Configuration);
 // se ejecuta internamente dentro de este método de extensión.
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull; // Opcional: limpia los nulls del JSON
+    }); builder.Services.AddEndpointsApiExplorer();
 
 // ==========================================
 // NUEVO: POLÍTICA DE CORS (Evita bloqueos con la WebApp)

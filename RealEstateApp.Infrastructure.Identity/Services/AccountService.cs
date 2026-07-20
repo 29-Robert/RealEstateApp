@@ -25,7 +25,11 @@ namespace RealEstateApp.Infrastructure.Identity.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly JWTSettings _jwtSettings;
         private readonly IEmailService _emailService;
-        private readonly IGenericRepository<Property> _propertyRepository; 
+        private readonly IGenericRepository<Property> _propertyRepository;
+        private readonly IGenericRepository<PropertyImage> _propertyImageRepository;
+        private readonly IGenericRepository<Offer> _offerRepository;
+        private readonly IGenericRepository<Favorite> _favoriteRepository;
+        private readonly IGenericRepository<ChatMessage> _chatRepository;
 
 
         public AccountService(
@@ -33,13 +37,21 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             UserManager<ApplicationUser> userManager,
             IOptions<JWTSettings> jwtSettings,
             IEmailService emailService,
-            IGenericRepository<Property> propertyRepository) 
+            IGenericRepository<Property> propertyRepository,
+            IGenericRepository<PropertyImage> propertyImageRepository,
+            IGenericRepository<Offer> offerRepository,
+            IGenericRepository<Favorite> favoriteRepository,
+            IGenericRepository<ChatMessage> chatRepository) 
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _jwtSettings = jwtSettings.Value;
             _emailService = emailService;
-            _propertyRepository = propertyRepository; 
+            _propertyRepository = propertyRepository;
+            _propertyImageRepository = propertyImageRepository;
+            _offerRepository = offerRepository;
+            _favoriteRepository = favoriteRepository;
+            _chatRepository = chatRepository;
         }
 
         // 1. PROCESO DE LOGIN
@@ -351,5 +363,83 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 SoldProperties = properties.Count(p => p.Status == "Vendida")
             };
         }
+
+        public async Task<RegisterResponseDto> DeleteAgentAsync(string agentId)
+        {
+            var response = new RegisterResponseDto();
+
+            var agent = await _userManager.FindByIdAsync(agentId);
+            if (agent == null)
+            {
+                response.HasError = true;
+                response.ErrorDescription = "El agente especificado no existe.";
+                return response;
+            }
+
+            var allProperties = await _propertyRepository.GetAllAsync();
+            var agentProperties = allProperties.Where(p => p.AgentId == agentId).ToList();
+
+            try
+            {
+                // 1. Descargamos los listados transaccionales dependientes en memoria
+                var allImages = await _propertyImageRepository.GetAllAsync();
+                var allOffers = await _offerRepository.GetAllAsync();
+                var allFavorites = await _favoriteRepository.GetAllAsync();
+                var allChats = await _chatRepository.GetAllAsync(); // <-- Descarga de chats añadida
+
+                foreach (var property in agentProperties)
+                {
+                    // A. Limpiar las imágenes de la propiedad
+                    var propertyImages = allImages.Where(i => i.PropertyId == property.Id).ToList();
+                    foreach (var img in propertyImages)
+                    {
+                        await _propertyImageRepository.DeleteAsync(img);
+                    }
+
+                    // B. Limpiar las ofertas recibidas por la propiedad
+                    var propertyOffers = allOffers.Where(o => o.PropertyId == property.Id).ToList();
+                    foreach (var offer in propertyOffers)
+                    {
+                        await _offerRepository.DeleteAsync(offer);
+                    }
+
+                    // C. Limpiar los favoritos asociados a la propiedad
+                    var propertyFavorites = allFavorites.Where(f => f.PropertyId == property.Id).ToList();
+                    foreach (var fav in propertyFavorites)
+                    {
+                        await _favoriteRepository.DeleteAsync(fav);
+                    }
+
+                    // D. Borrar la entidad Propiedad. 
+                    // EF Core limpiará automáticamente la relación con las Improvements aquí.
+                    await _propertyRepository.DeleteAsync(property);
+                }
+
+                // E. Limpiar los chats directos del agente (Emisor o Receptor)
+                var agentChats = allChats.Where(c => c.SenderId == agentId || c.ReceiverId == agentId).ToList();
+                foreach (var chat in agentChats)
+                {
+                    await _chatRepository.DeleteAsync(chat);
+                }
+
+                // 2. Borrar definitivamente al agente de la base de datos de Identity
+                var result = await _userManager.DeleteAsync(agent);
+                if (!result.Succeeded)
+                {
+                    response.HasError = true;
+                    response.ErrorDescription = "No se pudo eliminar el usuario de las credenciales de Identity.";
+                    return response;
+                }
+            }
+            catch (Exception ex)
+            {
+                response.HasError = true;
+                response.ErrorDescription = $"Error crítico durante el borrado en cascada: {ex.Message}";
+                return response;
+            }
+
+            return response;
+        }
+
     }
 }

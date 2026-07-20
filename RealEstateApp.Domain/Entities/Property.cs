@@ -24,8 +24,8 @@ namespace RealEstateApp.Domain.Entities
 
         public virtual ICollection<Improvement> Improvements { get; set; } = [];
         public virtual ICollection<PropertyImage> PropertyImages { get; set; } = new List<PropertyImage>();
-       // public virtual ICollection<Offer> Offers { get; set; } = new List<Offer>();
-       // public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
-       // public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
+        public virtual ICollection<Offer> Offers { get; set; } = new List<Offer>();
+        public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+        // public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
     }
 }
