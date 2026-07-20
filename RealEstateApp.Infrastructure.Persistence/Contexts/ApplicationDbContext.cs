@@ -56,4 +56,4 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
-}
+}

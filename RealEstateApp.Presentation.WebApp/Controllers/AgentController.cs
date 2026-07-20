@@ -6,9 +6,7 @@ using RealEstateApp.Infrastructure.Identity.Entities;
 
 namespace RealEstateApp.Presentation.WebApp.Controllers
 {
-    /// <summary>
-    /// Catálogo público de Agentes (visible sin autenticación)
-    /// </summary>
+    
     public class AgentController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;

@@ -85,7 +85,7 @@
                             <option value="">Todos los tipos</option>
                             @foreach (var type in propertyTypes)
                             {
-                                <option value="@type.Id" @(ViewBag.SelectedTypeId?.ToString() == type.Id.ToString() ? "selected" : "")>
+                                <option value="@type.Id" selected="@(ViewBag.SelectedTypeId?.ToString() == type.Id.ToString())">
                                     @type.Name
                                 </option>
                             }
@@ -122,7 +122,7 @@
                             <option value="">Cualquiera</option>
                             @for (int i = 1; i <= 6; i++)
                             {
-                                <option value="@i" @(ViewBag.Rooms?.ToString() == i.ToString() ? "selected" : "")>@i hab.</option>
+                                <option value="@i" selected="@(ViewBag.Rooms?.ToString() == i.ToString())">@i hab.</option>
                             }
                         </select>
                     </div>
@@ -132,7 +132,7 @@
                             <option value="">Cualquiera</option>
                             @for (int i = 1; i <= 6; i++)
                             {
-                                <option value="@i" @(ViewBag.Bathrooms?.ToString() == i.ToString() ? "selected" : "")>@i baño(s)</option>
+                                <option value="@i" selected="@(ViewBag.Bathrooms?.ToString() == i.ToString())">@i baño(s)</option>
                             }
                         </select>
                     </div>
