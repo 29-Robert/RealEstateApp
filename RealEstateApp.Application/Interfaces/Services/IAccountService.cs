@@ -15,6 +15,7 @@ namespace RealEstateApp.Application.Interfaces.Services
         Task ToggleAgentStatusAsync(string agentId);
         Task<List<AgentResponseDto>> GetAgentsListAsync();
         Task<AdminDashboardResponseDto> GetAdminDashboardStatsAsync();
+        Task<RegisterResponseDto> DeleteAgentAsync(string agentId);
 
 
     }
