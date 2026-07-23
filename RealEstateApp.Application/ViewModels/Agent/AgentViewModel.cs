@@ -19,7 +19,7 @@ namespace RealEstateApp.Application.ViewModels.Agent
         public bool IsActive { get; set; }
         public int PropertyCount { get; set; }
         public string CurrentPhotoPath { get; set; } = string.Empty;
-        public IFormFile? NewPhoto { get; set; } // Opcional: conserva la actual si no sube una nueva
+        public IFormFile? NewPhoto { get; set; } 
     }
 
 }

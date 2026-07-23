@@ -57,39 +57,32 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register(RegisterViewModel vm, string origin)
+        public async Task<IActionResult> Register(RegisterViewModel vm)
         {
             if (!ModelState.IsValid)
             {
                 return View(vm);
             }
 
-            origin = Request.Headers["origin"];
+            var origin = Request.Headers["Origin"].ToString();
             var response = await _accountService.RegisterUserAsync(vm, origin);
 
             if (response.HasError)
             {
-                ModelState.AddModelError(string.Empty, response.ErrorDescription ?? "Error al registrarse.");
+                ModelState.AddModelError("Summary", response.ErrorDescription ?? "Error al registrarse.");
                 return View(vm);
             }
 
-            if (vm.UserType == "Cliente")
-            {
-                TempData["SuccessMessage"] = "Registro exitoso. Revisa tu correo para activar tu cuenta.";
-            }
-            else
-            {
-                TempData["SuccessMessage"] = "Registro de agente exitoso. Un administrador revisará tu cuenta.";
-            }
-
-            return RedirectToAction(nameof(Login));
+            TempData["SuccessMessage"] = "Cuenta creada exitosamente. Por favor, revisa tu correo electrónico para confirmar tu cuenta antes de iniciar sesión.";
+            return RedirectToAction("Login", "Account");
         }
 
+        [HttpGet]
         public async Task<IActionResult> ConfirmEmail(string userId, string token)
         {
             var result = await _accountService.ConfirmEmailAsync(userId, token);
-            ViewBag.Message = result;
-            return View();
+            TempData["ActivationResult"] = result;
+            return RedirectToAction(nameof(Login));
         }
 
         public async Task<IActionResult> Logout()

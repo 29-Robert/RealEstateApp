@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateApp.Application.Interfaces.Services;
@@ -39,6 +39,7 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         }
 
         // Pantalla exclusiva "Mis Favoritos"
+        [HttpGet]
         public async Task<IActionResult> Favorites()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -47,5 +48,6 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
             var favoriteProperties = await _favoriteService.GetClientFavoritesAsync(user.Id);
             return View(favoriteProperties);
         }
+        
     }
 }

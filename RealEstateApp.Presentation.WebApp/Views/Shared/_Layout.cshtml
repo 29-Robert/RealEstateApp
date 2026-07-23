@@ -47,6 +47,16 @@
                             </a>
                         </li>
 
+                        @* Menú exclusivo del Cliente *@
+                        @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark fw-semibold" asp-controller="Client" asp-action="Favorites">
+                                    <i class="bi bi-heart-fill text-danger me-1"></i>Mis Favoritos
+                                </a>
+                            </li>
+                        }
+
                         @* Menú exclusivo del Agente *@
                         @if (User.IsInRole("Agente"))
                         {
