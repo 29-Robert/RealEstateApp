@@ -20,5 +20,6 @@ namespace RealEstateApp.Application.DTOs.Property
         public string PropertyTypeName { get; set; } = string.Empty;
         public string SaleTypeName { get; set; } = string.Empty;
         public string AgentId { get; set; } = string.Empty;
+        public bool IsFavorite { get; set; }
     }
 }

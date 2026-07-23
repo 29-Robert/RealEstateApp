@@ -1,4 +1,4 @@
-﻿using Azure.Core;
+using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
@@ -13,7 +13,9 @@ using RealEstateApp.Domain.Entities;
 using RealEstateApp.Domain.Enums;
 using RealEstateApp.Domain.Settings;
 using RealEstateApp.Infrastructure.Identity.Entities;
+using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Security.Claims;
 using System.Text;
 
@@ -30,6 +32,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
         private readonly IGenericRepository<Offer> _offerRepository;
         private readonly IGenericRepository<Favorite> _favoriteRepository;
         private readonly IGenericRepository<ChatMessage> _chatRepository;
+        private readonly ILogger<AccountService> _logger;
 
 
         public AccountService(
@@ -41,7 +44,8 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             IGenericRepository<PropertyImage> propertyImageRepository,
             IGenericRepository<Offer> offerRepository,
             IGenericRepository<Favorite> favoriteRepository,
-            IGenericRepository<ChatMessage> chatRepository) 
+            IGenericRepository<ChatMessage> chatRepository,
+            ILogger<AccountService> logger) 
         {
             _signInManager = signInManager;
             _userManager = userManager;
@@ -52,6 +56,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             _offerRepository = offerRepository;
             _favoriteRepository = favoriteRepository;
             _chatRepository = chatRepository;
+            _logger = logger;
         }
 
         // 1. PROCESO DE LOGIN
@@ -72,6 +77,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
 
             if (!user.EmailConfirmed)
             {
+                await _signInManager.SignOutAsync();
                 return new AuthenticationResponseDto { HasError = true, ErrorDescription = "Debes activar tu cuenta por correo antes de iniciar sesión." };
             }
 
@@ -80,6 +86,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
 
             if (roles.Contains("Agente") && !user.IsActive)
             {
+                await _signInManager.SignOutAsync();
                 return new AuthenticationResponseDto
                 {
                     HasError = true,
@@ -157,6 +164,34 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 return response;
             }
 
+            string photoPath = "/images/users/default-profile.png";
+
+            if (registerVm.Photo != null && registerVm.Photo.Length > 0)
+            {
+                try
+                {
+                    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "users");
+                    if (!Directory.Exists(folderPath))
+                    {
+                        Directory.CreateDirectory(folderPath);
+                    }
+
+                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(registerVm.Photo.FileName);
+                    var filePath = Path.Combine(folderPath, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await registerVm.Photo.CopyToAsync(stream);
+                    }
+
+                    photoPath = $"/images/users/{fileName}";
+                }
+                catch (Exception)
+                {
+                    // Si falla el guardado físico, se queda con la imagen por defecto
+                }
+            }
+
             var newUser = new ApplicationUser
             {
                 FirstName = registerVm.FirstName,
@@ -164,30 +199,41 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 Email = registerVm.Email,
                 UserName = registerVm.Username,
                 PhoneNumber = registerVm.PhoneNumber,
-                IsActive = false
+                CardId = registerVm.CardId,
+                PhotoPath = photoPath,
+                IsActive = false,
+                EmailConfirmed = false
             };
 
             var result = await _userManager.CreateAsync(newUser, registerVm.Password);
 
             if (!result.Succeeded)
             {
-                response.HasError = true;
-                response.ErrorDescription = result.Errors.FirstOrDefault()?.Description ?? "Ocurrió un error al registrar el usuario.";
-                return response;
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return new RegisterResponseDto { HasError = true, ErrorDescription = errors };
             }
 
             await _userManager.AddToRoleAsync(newUser, registerVm.UserType);
 
             if (registerVm.UserType == Roles.Cliente.ToString())
             {
-                var verificationUrl = await GenerateVerificationUrl(newUser, origin);
-
-                await _emailService.SendAsync(new EmailRequestDto
+                try
                 {
-                    To = newUser.Email,
-                    Subject = "Activación de Cuenta - RealEstateApp",
-                    HtmlBody = $"<h1>¡Hola {newUser.FirstName}!</h1><p>Gracias por registrarte. Para activar tu cuenta de Cliente, por favor haz clic en el siguiente enlace:</p><a href='{verificationUrl}'>Activar Mi Cuenta</a>"
-                });
+                    var verificationUrl = await GenerateVerificationUrl(newUser, origin);
+
+                    await _emailService.SendAsync(new EmailRequestDto
+                    {
+                        To = newUser.Email,
+                        Subject = "Activación de Cuenta - RealEstateApp",
+                        HtmlBody = $"<h1>¡Hola {newUser.FirstName}!</h1><p>Gracias por registrarte. Para activar tu cuenta de Cliente, por favor haz clic en el siguiente enlace:</p><a href='{verificationUrl}'>Activar Mi Cuenta</a>"
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "El usuario se creó correctamente pero falló el envío del correo de confirmación.");
+                    response.HasError = false;
+                    response.ErrorDescription = "El usuario se creó correctamente, pero ocurrió un problema al enviar el correo de activación. Por favor contacte soporte.";
+                }
             }
 
             return response;
@@ -300,6 +346,10 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             }
 
             user.IsActive = !user.IsActive;
+            if (user.IsActive)
+            {
+                user.EmailConfirmed = true;
+            }
 
             await _userManager.UpdateAsync(user);
         }

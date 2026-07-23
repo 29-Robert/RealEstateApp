@@ -1,11 +1,11 @@
-﻿using MailKit.Security;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using RealEstateApp.Application.DTOs.Email;
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Domain.Settings;
-
 
 namespace RealEstateApp.Infrastructure.Shared.Services
 {
@@ -41,7 +41,11 @@ namespace RealEstateApp.Infrastructure.Shared.Services
 
                     email.Body = builder.ToMessageBody();
 
-                    using MailKit.Net.Smtp.SmtpClient smtpClient = new();
+                    using SmtpClient smtpClient = new();
+
+                    // Mitigación de errores de revocación y certificados autofirmados locales
+                    smtpClient.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                    smtpClient.CheckCertificateRevocation = false;
 
                     await smtpClient.ConnectAsync(MailSettings.SmtpHost, MailSettings.SmtpPort, SecureSocketOptions.StartTls);
                     await smtpClient.AuthenticateAsync(MailSettings.SmtpUser, MailSettings.SmtpPassword);

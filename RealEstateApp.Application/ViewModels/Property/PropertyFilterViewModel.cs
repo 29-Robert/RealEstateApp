@@ -13,6 +13,6 @@ namespace RealEstateApp.Application.ViewModels.Property
         public decimal? MaxPrice { get; set; }
         public int? Rooms { get; set; }
         public int? Bathrooms { get; set; }
-        public int? Code { get; set; } // busqueda exacta por codigo
+        public int? Code { get; set; } 
     }
 }

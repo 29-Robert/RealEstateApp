@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace RealEstateApp.Application.ViewModels.Users
 {
@@ -37,5 +38,8 @@ namespace RealEstateApp.Application.ViewModels.Users
 
         [Required(ErrorMessage = "Debe seleccionar un tipo de usuario (Rol).")]
         public string UserType { get; set; } = null!; 
+
+        public string? CardId { get; set; }
+        public IFormFile? Photo { get; set; }
     }
 }
