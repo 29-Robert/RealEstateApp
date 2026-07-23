@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateApp.Application.Interfaces.Services;
+using RealEstateApp.Infrastructure.Identity.Entities;
 
 namespace RealEstateApp.Presentation.WebApp.Controllers
 {
@@ -7,11 +9,19 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
     {
         private readonly IPropertyService _propertyService;
         private readonly IPropertyTypeService _propertyTypeService;
+        private readonly IFavoriteService _favoriteService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public HomeController(IPropertyService propertyService, IPropertyTypeService propertyTypeService)
+        public HomeController(
+            IPropertyService propertyService,
+            IPropertyTypeService propertyTypeService,
+            IFavoriteService favoriteService,
+            UserManager<ApplicationUser> userManager)
         {
             _propertyService = propertyService;
             _propertyTypeService = propertyTypeService;
+            _favoriteService = favoriteService;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index(
@@ -36,6 +46,22 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
             var properties = await _propertyService.GetFilteredAsync(
                 propertyTypeId, minPrice, maxPrice, rooms, bathrooms);
 
+            // =========================================================
+            // NUEVO: Marcar las propiedades favoritas del cliente
+            // =========================================================
+            if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null)
+                {
+                    var favoriteIds = await _favoriteService.GetClientFavoritePropertyIdsAsync(user.Id);
+                    foreach (var prop in properties)
+                    {
+                        prop.IsFavorite = favoriteIds.Contains(prop.Id);
+                    }
+                }
+            }
+
             var propertyTypes = await _propertyTypeService.GetAllViewModel();
 
             ViewBag.PropertyTypes = propertyTypes;
@@ -56,6 +82,18 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
             {
                 return RedirectToAction(nameof(Index));
             }
+
+            // Marcar si es favorita en la vista de detalle
+            if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null)
+                {
+                    var favoriteIds = await _favoriteService.GetClientFavoritePropertyIdsAsync(user.Id);
+                    property.IsFavorite = favoriteIds.Contains(property.Id);
+                }
+            }
+
             return View(property);
         }
     }

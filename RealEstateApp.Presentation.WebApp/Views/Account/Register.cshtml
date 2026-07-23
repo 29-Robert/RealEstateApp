@@ -1,4 +1,4 @@
-﻿@using RealEstateApp.Application.ViewModels.Users
+@using RealEstateApp.Application.ViewModels.Users
 @model RegisterViewModel
 @{
     ViewData["Title"] = "Crear Cuenta";
@@ -19,7 +19,8 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
-                    <form asp-controller="Account" asp-action="Register" method="post" novalidate>
+                    <form asp-controller="Account" asp-action="Register" method="post" enctype="multipart/form-data" novalidate>
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
                         <div class="row">
                             @* Campo: Nombre *@
@@ -76,10 +77,26 @@
                             </div>
                         </div>
 
+                        <div class="row">
+                            @* Campo: Cédula/CardId *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="CardId" class="form-label fw-semibold">Cédula</label>
+                                <input asp-for="CardId" class="form-control" placeholder="Ej. 001-0000000-0" />
+                                <span asp-validation-for="CardId" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            @* Campo: Foto de Perfil *@
+                            <div class="col-sm-6 mb-3">
+                                <label asp-for="Photo" class="form-label fw-semibold">Foto de Perfil</label>
+                                <input asp-for="Photo" type="file" class="form-control" accept="image/*" />
+                                <span asp-validation-for="Photo" class="text-danger small mt-1 d-block"></span>
+                            </div>
+                        </div>
+
                         @* Campo Especial: Tipo de Usuario (Selector de Rol) *@
                         <div class="mb-4">
                             <label asp-for="UserType" class="form-label fw-semibold">¿Cómo deseas registrarte?</label>
-                            <select asp-for="UserType" class="form-select">
+                            <select asp-for="UserType" id="UserTypeSelect" class="form-select">
                                 <option value="" selected disabled>-- Selecciona una opción --</option>
                                 <option value="Cliente">Quiero comprar/alquilar propiedades (Cliente)</option>
                                 <option value="Agente">Quiero publicar y vender propiedades (Agente)</option>
@@ -118,6 +135,25 @@
             var summary = document.getElementById("register-error-summary");
             if (summary && summary.innerText.trim().length > 0) {
                 summary.classList.remove("d-none");
+            }
+
+            var select = document.getElementById("UserTypeSelect");
+            var cardInput = document.querySelector("[name='CardId']");
+            var photoInput = document.querySelector("[name='Photo']");
+
+            function toggleRequired() {
+                if (select && select.value === "Agente") {
+                    cardInput.setAttribute("required", "required");
+                    photoInput.setAttribute("required", "required");
+                } else {
+                    if (cardInput) cardInput.removeAttribute("required");
+                    if (photoInput) photoInput.removeAttribute("required");
+                }
+            }
+
+            if (select) {
+                select.addEventListener("change", toggleRequired);
+                toggleRequired();
             }
         });
     </script>
