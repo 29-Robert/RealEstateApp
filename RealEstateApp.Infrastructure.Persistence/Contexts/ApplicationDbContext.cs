@@ -10,9 +10,6 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
         public DbSet<SaleType> SaleTypes { get; set; }
         public DbSet<Improvement> Improvements { get; set; }
         public DbSet<PropertyImage> PropertyImages { get; set; }
-        public DbSet<ChatMessage> ChatMessages { get; set; }
-        public DbSet<Offer> Offers { get; set; }
-        public DbSet<Favorite> Favorites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -35,18 +32,6 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
             modelBuilder.Entity<PropertyImage>()
                 .ToTable("PropertyImages");
 
-            modelBuilder.Entity<ChatMessage>()
-                .ToTable("ChatMessages");
-
-            modelBuilder.Entity<Offer>()
-                .ToTable("Offers")
-                .Property(o => o.Amount)
-                .HasPrecision(18, 2);
-
-            modelBuilder.Entity<Favorite>()
-                .ToTable("Favorites");
-
-            // Relaciones de la base de datos
             modelBuilder.Entity<PropertyType>()
                 .HasMany<Property>(pt => pt.Properties)
                 .WithOne(p => p.PropertyType)
