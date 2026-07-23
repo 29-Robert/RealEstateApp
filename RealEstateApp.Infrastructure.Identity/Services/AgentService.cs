@@ -38,7 +38,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                     FirstName = agent.FirstName,
                     LastName = agent.LastName,
                     Email = agent.Email ?? string.Empty,
-                    PhotoPath = agent.PhotoPath,
+                    PhotoPath = agent.PhotoPath ?? "",
                     IsActive = agent.IsActive,
                     PropertyCount = properties.Count
                 });
@@ -69,7 +69,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 LastName = agent.LastName,
                 Email = agent.Email ?? string.Empty,
                 Phone = agent.PhoneNumber ?? string.Empty,
-                PhotoPath = agent.PhotoPath,
+                PhotoPath = agent.PhotoPath ?? "",
                 IsActive = agent.IsActive,
                 PropertyCount = properties.Count,
                 AvailableProperties = _mapper.Map<List<Application.DTOs.Property.PropertyDto>>(properties)
