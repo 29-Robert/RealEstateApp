@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RealEstateApp.Application;
 using RealEstateApp.Infrastructure.Persistence;
+using RealEstateApp.Infrastructure.Persistence.Contexts;
 using RealEstateApp.Infrastructure.Identity;
 using RealEstateApp.Infrastructure.Identity.Contexts;
 using RealEstateApp.Infrastructure.Identity.Entities;
@@ -38,6 +39,10 @@ try
         var services = scope.ServiceProvider;
         try
         {
+            // Aplicar migraciones automáticamente para ApplicationDbContext (Persistencia principal)
+            var applicationContext = services.GetRequiredService<ApplicationDbContext>();
+            await applicationContext.Database.MigrateAsync();
+
             // Aplicar migraciones automáticamente para IdentityContext
             var identityContext = services.GetRequiredService<IdentityContext>();
             await identityContext.Database.MigrateAsync();
@@ -81,7 +86,7 @@ try
 
     app.Run();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex.GetType().Name != "HostAbortedException")
 {
     Console.WriteLine("==================================================");
     Console.WriteLine("FATAL CRASH DETECTED IN STARTUP:");

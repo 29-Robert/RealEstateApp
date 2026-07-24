@@ -1,4 +1,4 @@
-﻿namespace RealEstateApp.Domain.Settings
+namespace RealEstateApp.Domain.Settings
 {
     public class MailSettings
     {
@@ -6,7 +6,7 @@
         public required string SmtpHost { get; set; }
         public int SmtpPort { get; set; }
         public required string SmtpUser { get; set; }
-        public required string SmtpPassword { get; set; }
-        public required string DisplayName { get; set; }
+        public required string SmtpPass { get; set; }
+        public string? DisplayName { get; set; }
     }
 }

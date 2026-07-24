@@ -11,9 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplicationLayer();
 builder.Services.AddPersistenceInfrastructure(builder.Configuration);
 builder.Services.AddSharedLayerIoc(builder.Configuration);
-
-// Nota: Se asume que la configuración de AddAuthentication y JWT 
-// se ejecuta internamente dentro de este método de extensión.
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers()

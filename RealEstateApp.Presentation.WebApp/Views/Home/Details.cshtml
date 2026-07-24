@@ -64,6 +64,45 @@
         font-weight: 800;
         color: #0d6efd;
     }
+    
+    /* Estilos del Chat */
+    .chat-box {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        padding: 15px;
+    }
+    .chat-message {
+        margin-bottom: 15px;
+        max-width: 75%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        position: relative;
+    }
+    .chat-message.client {
+        background-color: #0d6efd;
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 2px;
+    }
+    .chat-message.agent {
+        background-color: #e9ecef;
+        color: #212529;
+        margin-right: auto;
+        border-bottom-left-radius: 2px;
+    }
+    .chat-meta {
+        font-size: 0.75rem;
+        opacity: 0.85;
+        margin-top: 5px;
+        text-align: right;
+    }
+    .chat-message.agent .chat-meta {
+        color: #6c757d;
+        text-align: left;
+    }
 </style>
 
 <div class="container my-5">
@@ -181,6 +220,64 @@
                     </div>
                 </div>
             }
+
+            <!-- Chat con el Agente -->
+            @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
+            {
+                <div class="card mt-5 shadow border-0 rounded-3">
+                    <div class="card-header bg-dark text-white py-3">
+                        <h4 class="mb-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Chat con el Agente</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        @if (TempData["ChatError"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ChatError"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+
+                        <div class="chat-box mb-4 d-flex flex-column" id="chatContainer" style="max-height: 350px; overflow-y: auto;">
+                            @if (Model.ChatMessages != null && Model.ChatMessages.Any())
+                            {
+                                @foreach (var msg in Model.ChatMessages)
+                                {
+                                    <div class="chat-message @(msg.IsFromClient ? "client" : "agent") shadow-sm">
+                                        <div class="fw-bold small mb-1">
+                                            @(msg.IsFromClient ? "Tú" : (msg.AgentName ?? "Agente"))
+                                        </div>
+                                        <p class="mb-0">@msg.Content</p>
+                                        <div class="chat-meta mt-1">
+                                            @msg.SentAt.ToString("g")
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-5">
+                                    <i class="bi bi-chat-text" style="font-size: 3rem;"></i>
+                                    <p class="mt-2">No hay mensajes anteriores en esta conversación. ¡Envía un mensaje para comenzar!</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Formulario de envío -->
+                        <form asp-controller="Home" asp-action="SendMessage" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="PropertyId" value="@Model.Id" />
+                            <input type="hidden" name="AgentId" value="@Model.AgentId" />
+                            
+                            <div class="input-group">
+                                <textarea name="Content" class="form-control" rows="2" placeholder="Escribe tu mensaje aquí..." required maxlength="1000"></textarea>
+                                <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                    Enviar <i class="bi bi-send-fill ms-1"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
         </div>
 
         <!-- Sidebar del Agente -->
@@ -221,3 +318,14 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var chatContainer = document.getElementById("chatContainer");
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        });
+    </script>
+}

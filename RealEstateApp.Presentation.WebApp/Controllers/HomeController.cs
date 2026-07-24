@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateApp.Application.Interfaces.Services;
+using RealEstateApp.Application.ViewModels.Message;
 using RealEstateApp.Infrastructure.Identity.Entities;
 
 namespace RealEstateApp.Presentation.WebApp.Controllers
@@ -11,17 +12,20 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         private readonly IPropertyTypeService _propertyTypeService;
         private readonly IFavoriteService _favoriteService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IMessageService _messageService;
 
         public HomeController(
             IPropertyService propertyService,
             IPropertyTypeService propertyTypeService,
             IFavoriteService favoriteService,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IMessageService messageService)
         {
             _propertyService = propertyService;
             _propertyTypeService = propertyTypeService;
             _favoriteService = favoriteService;
             _userManager = userManager;
+            _messageService = messageService;
         }
 
         public async Task<IActionResult> Index(
@@ -83,7 +87,7 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Marcar si es favorita en la vista de detalle
+            // Marcar si es favorita y cargar el chat en la vista de detalle si es cliente
             if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
             {
                 var user = await _userManager.GetUserAsync(User);
@@ -91,10 +95,44 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
                 {
                     var favoriteIds = await _favoriteService.GetClientFavoritePropertyIdsAsync(user.Id);
                     property.IsFavorite = favoriteIds.Contains(property.Id);
+
+                    property.ChatMessages = await _messageService.GetConversationAsync(property.Id, user.Id);
                 }
             }
 
             return View(property);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendMessage(SendMessageViewModel vm)
+        {
+            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Cliente"))
+            {
+                return Challenge();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                TempData["ChatError"] = "Debe escribir un mensaje antes de enviarlo.";
+                return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+            }
+
+            var property = await _propertyService.GetByIdAsync(vm.PropertyId);
+            if (property == null || property.Status != "Disponible")
+            {
+                TempData["ChatError"] = "La propiedad no existe o no está disponible.";
+                return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            await _messageService.SendMessageAsync(vm, user.Id);
+            return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
         }
     }
 }
