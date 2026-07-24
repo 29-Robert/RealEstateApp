@@ -1,18 +1,19 @@
 using RealEstateApp.Domain.Common;
 using RealEstateApp.Domain.Enums;
-using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RealEstateApp.Domain.Entities
 {
     public class Offer : BaseEntity
     {
         public int PropertyId { get; set; }
-        public string ClientId { get; set; } = null!;
-        public decimal Amount { get; set; }
-        public DateTime OfferDate { get; set; } = DateTime.Now;
-        public OfferStatus Status { get; set; } = OfferStatus.Pendiente;
 
-        // Propiedad de navegación
-        public virtual Property Property { get; set; } = null!;
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Amount { get; set; }
+
+        public DateTime Date { get; set; }
+        public EstadoOferta Status { get; set; }
+
+        public Property Property { get; set; } = null!;
     }
 }
