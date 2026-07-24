@@ -1,5 +1,6 @@
 using RealEstateApp.Application.DTOs.Account;
 using RealEstateApp.Application.ViewModels.Users;
+using RealEstateApp.Core.Application.ViewModels.Account;
 
 namespace RealEstateApp.Application.Interfaces.Services
 {
@@ -17,7 +18,11 @@ namespace RealEstateApp.Application.Interfaces.Services
         Task<List<AgentResponseDto>> GetAgentsListAsync();
         Task<AdminDashboardResponseDto> GetAdminDashboardStatsAsync();
         Task<RegisterResponseDto> DeleteAgentAsync(string agentId);
+        Task<RegisterResponseDto> UpdateAdminOrDeveloperAsync(EditUserViewModel vm);
+        Task<RegisterResponseDto> DeleteAdminOrDeveloperAsync(string id);
+        Task ToggleUserStatusAsync(string id);
 
-
+        Task<SaveProfileViewModel> GetUserProfileByIdAsync(string userId);
+        Task<UpdateProfileResponse> UpdateProfileAsync(SaveProfileViewModel vm);
     }
 }

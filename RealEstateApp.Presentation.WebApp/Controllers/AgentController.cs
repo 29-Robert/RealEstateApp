@@ -96,11 +96,11 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
             if (response.HasError)
             {
                 TempData["ErrorMessage"] = response.ErrorDescription;
-                return RedirectToAction("Index");
+                return RedirectToAction("Agents", "Admin");
             }
 
             TempData["SuccessMessage"] = "El agente y todo su ecosistema fueron eliminados exitosamente.";
-            return RedirectToAction("Index");
+            return RedirectToAction("Agents", "Admin");
         }
 
         private string GetCurrentUserId() =>

@@ -95,23 +95,17 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         [HttpGet]
         public IActionResult AccessDenied()
         {
-            return View("AccesDenied");
-        }
-
-        [HttpGet]
-        public IActionResult AccesDenied()
-        {
-            return RedirectToAction(nameof(AccessDenied));
+            return View("AccessDenied");
         }
 
         private IActionResult RedirectByRole()
         {
             if (User.IsInRole("Administrador"))
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Index", "Admin");
             if (User.IsInRole("Agente"))
                 return RedirectToAction("Index", "Property");
             if (User.IsInRole("Cliente"))
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("ClientHome", "Home");
 
             return RedirectToAction("Index", "Home");
         }

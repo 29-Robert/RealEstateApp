@@ -1,0 +1,74 @@
+@model RealEstateApp.Application.DTOs.Account.UserResponseDto
+@{
+    ViewData["Title"] = "Confirmar eliminación de Agente";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-body p-5">
+                    <!-- Icono Advertencia -->
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem; filter: drop-shadow(0 4px 8px rgba(220,53,69,0.25));"></i>
+                    </div>
+
+                    <h2 class="fw-bold text-center text-dark mb-3">¿Eliminar completamente al Agente?</h2>
+                    
+                    <p class="text-muted text-center mb-4">
+                        Esta acción es <strong>irreversible</strong> y eliminará toda la información vinculada al agente en la base de datos.
+                    </p>
+
+                    <!-- Caja con detalles del Agente -->
+                    <div class="bg-light rounded-3 p-4 mb-4 border border-1">
+                        <h6 class="fw-bold text-muted text-uppercase mb-3 small"><i class="bi bi-info-circle me-1"></i>Detalles del perfil</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Nombre completo:</span>
+                            <span class="fw-semibold text-dark">@Model.LastName, @Model.FirstName</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Nombre de usuario:</span>
+                            <span class="fw-semibold text-dark">@Model.UserName</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Correo electrónico:</span>
+                            <span class="fw-semibold text-dark">@Model.Email</span>
+                        </div>
+                        <hr class="text-muted my-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-danger fw-semibold">Propiedades publicadas:</span>
+                            <span class="badge bg-danger fs-6">@ViewBag.PropertyCount</span>
+                        </div>
+                    </div>
+
+                    <!-- Caja Advertencia Cascada -->
+                    <div class="alert alert-danger border-0 rounded-3 p-3 mb-4 text-start">
+                        <div class="d-flex">
+                            <i class="bi bi-x-circle-fill text-danger fs-4 me-3"></i>
+                            <div>
+                                <span class="fw-bold d-block text-danger">Consecuencias de la eliminación:</span>
+                                <small class="text-dark">
+                                    Se borrarán en cascada todas las propiedades publicadas por el agente, sus imágenes asociadas, las ofertas recibidas de clientes, los chats correspondientes y los registros de favoritos de los clientes.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <form asp-controller="Agent" asp-action="DeleteAgent" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <div class="d-flex gap-3">
+                            <a asp-controller="Admin" asp-action="Agents" class="btn btn-outline-secondary fw-semibold w-100 py-2 rounded-2">
+                                <i class="bi bi-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger fw-bold w-100 py-2 rounded-2">
+                                <i class="bi bi-trash-fill me-1"></i> Confirmar Borrado
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
