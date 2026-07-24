@@ -10,7 +10,7 @@
         }
         else if (User.IsInRole("Agente"))
         {
-            returnUrl = Url.Action("Index", "Agent") ?? "/Agent/Index";
+            returnUrl = Url.Action("Index", "Property") ?? "/Property/Index";
         }
         else if (User.IsInRole("Administrador"))
         {

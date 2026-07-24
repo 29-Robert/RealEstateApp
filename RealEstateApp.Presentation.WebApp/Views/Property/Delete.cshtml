@@ -1,0 +1,73 @@
+@model RealEstateApp.Application.DTOs.Property.PropertyDto
+@{
+    ViewData["Title"] = "Confirmar eliminación de Propiedad";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-body p-5">
+                    <!-- Icono Visual -->
+                    <div class="text-center mb-4">
+                        <i class="bi bi-house-x-fill text-danger" style="font-size: 5rem; filter: drop-shadow(0 4px 8px rgba(220,53,69,0.25));"></i>
+                    </div>
+
+                    <h2 class="fw-bold text-center text-dark mb-3">¿Eliminar Propiedad?</h2>
+                    
+                    <p class="text-muted text-center mb-4">
+                        Estás a punto de eliminar la publicación de esta propiedad. Esta acción es <strong>irreversible</strong>.
+                    </p>
+
+                    <!-- Detalle de Propiedad -->
+                    <div class="bg-light rounded-3 p-4 mb-4 border border-1">
+                        <h6 class="fw-bold text-muted text-uppercase mb-3 small"><i class="bi bi-info-circle me-1"></i>Detalles de publicación</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Título:</span>
+                            <span class="fw-semibold text-dark text-end">@Model.Title</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Código único:</span>
+                            <span class="fw-semibold text-dark">@Model.Code</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Tipo:</span>
+                            <span class="fw-semibold text-dark">@Model.PropertyTypeName | @Model.SaleTypeName</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-secondary">Precio de publicación:</span>
+                            <span class="fw-bold text-primary">$@Model.Price.ToString("N2")</span>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de borrado cascada -->
+                    <div class="alert alert-danger border-0 rounded-3 p-3 mb-4">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle-fill text-danger fs-4 me-3"></i>
+                            <div>
+                                <span class="fw-bold d-block text-danger">Pérdida de datos:</span>
+                                <small class="text-dark">
+                                    Al eliminar esta propiedad, se borrarán de forma definitiva todas sus imágenes publicadas, las ofertas que hayas recibido de clientes interesados y se quitará de la lista de favoritos de todos los clientes.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de Acción -->
+                    <form asp-controller="Property" asp-action="DeletePost" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <div class="d-flex gap-3">
+                            <a asp-action="Index" class="btn btn-outline-secondary fw-semibold w-100 py-2 rounded-2">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger fw-bold w-100 py-2 rounded-2">
+                                <i class="bi bi-trash-fill me-1"></i> Confirmar Eliminación
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

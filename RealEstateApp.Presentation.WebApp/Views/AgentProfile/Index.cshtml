@@ -1,0 +1,119 @@
+@model RealEstateApp.Infrastructure.Identity.Entities.ApplicationUser
+@{
+    ViewData["Title"] = "Mi Perfil - Agente";
+}
+
+<style>
+    .profile-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    .profile-avatar {
+        width: 140px;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .avatar-placeholder {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: #adb5bd;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+</style>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            <div class="card profile-card">
+                <div class="card-header bg-primary text-white text-center py-4 rounded-top-4">
+                    <h3 class="mb-0 fw-bold"><i class="bi bi-person-circle me-2"></i>Mi Perfil</h3>
+                    <p class="mb-0 opacity-75 small">Consulta y actualiza tus datos de contacto en la plataforma</p>
+                </div>
+                <div class="card-body p-5">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Index" method="post" enctype="multipart/form-data">
+                        <!-- Vista previa de foto de perfil -->
+                        <div class="text-center mb-4">
+                            @if (!string.IsNullOrEmpty(Model.PhotoPath))
+                            {
+                                <img src="@Model.PhotoPath" alt="Foto de perfil" class="profile-avatar mb-3">
+                            }
+                            else
+                            {
+                                <div class="avatar-placeholder mx-auto mb-3">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                            }
+                            <h5 class="fw-bold mb-1">@Model.FirstName @Model.LastName</h5>
+                            <span class="badge bg-success px-3 py-2 fw-semibold">Agente RealEstate</span>
+                        </div>
+
+                        <hr class="text-muted mb-4">
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="firstName" class="form-label fw-semibold">Nombre</label>
+                                <input type="text" id="firstName" name="firstName" class="form-control" value="@Model.FirstName" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lastName" class="form-label fw-semibold">Apellido</label>
+                                <input type="text" id="lastName" name="lastName" class="form-control" value="@Model.LastName" required />
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="phoneNumber" class="form-label fw-semibold">Teléfono</label>
+                                <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control" value="@Model.PhoneNumber" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cardId" class="form-label fw-semibold">Cédula (Opcional)</label>
+                                <input type="text" id="cardId" name="cardId" class="form-control" value="@Model.CardId" placeholder="Ej. 001-0000000-0" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="photo" class="form-label fw-semibold">Foto de Perfil (Opcional)</label>
+                            <input type="file" id="photo" name="photo" class="form-control" accept="image/*" />
+                            <small class="text-muted">Carga una nueva imagen para reemplazar la foto actual.</small>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <a asp-controller="Property" asp-action="Index" class="btn btn-outline-secondary fw-semibold w-100 py-2">
+                                <i class="bi bi-arrow-left"></i> Volver a mis propiedades
+                            </a>
+                            <button type="submit" class="btn btn-primary fw-bold w-100 py-2">
+                                <i class="bi bi-cloud-upload-fill me-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -197,9 +197,48 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         }
 
         [Authorize(Roles = "Cliente")]
-        public IActionResult ClientHome()
+        public async Task<IActionResult> ClientHome(
+            int? propertyTypeId,
+            decimal? minPrice,
+            decimal? maxPrice,
+            int? rooms,
+            int? bathrooms,
+            int? code)
         {
-            return RedirectToAction("Index");
+            if (code.HasValue)
+            {
+                var found = await _propertyService.GetByCodeAsync(code.Value);
+                if (found != null)
+                {
+                    return RedirectToAction(nameof(Details), new { id = found.Id });
+                }
+                TempData["SearchError"] = $"No se encontró ninguna propiedad con el código {code.Value}.";
+            }
+
+            var properties = await _propertyService.GetFilteredAsync(
+                propertyTypeId, minPrice, maxPrice, rooms, bathrooms);
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                var favoriteIds = await _favoriteService.GetClientFavoritePropertyIdsAsync(user.Id);
+                foreach (var prop in properties)
+                {
+                    prop.IsFavorite = favoriteIds.Contains(prop.Id);
+                }
+            }
+
+            var propertyTypes = await _propertyTypeService.GetAllViewModel();
+
+            ViewBag.PropertyTypes = propertyTypes;
+            ViewBag.SelectedTypeId = propertyTypeId;
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+            ViewBag.Rooms = rooms;
+            ViewBag.Bathrooms = bathrooms;
+            ViewBag.Code = code;
+
+            return View(properties);
         }
     }
 }
