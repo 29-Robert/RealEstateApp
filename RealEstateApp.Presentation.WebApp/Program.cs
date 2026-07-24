@@ -81,7 +81,7 @@ try
 
     app.MapControllerRoute(
         name: "default",
-        pattern: "{controller=Account}/{action=Login}/{id?}") // Ajustamos la ruta inicial para que por defecto los mande a loguearse
+        pattern: "{controller=Home}/{action=Index}/{id?}") // Ajustamos la ruta inicial para que por defecto los mande a loguearse
         .WithStaticAssets();
 
     app.Run();
