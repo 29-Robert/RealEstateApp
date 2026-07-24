@@ -103,6 +103,10 @@
                                     }
                                 </td>
                                 <td class="text-end pe-3">
+                                    <a asp-controller="Agent" asp-action="PropertyDetails" asp-route-id="@p.Id"
+                                       class="btn btn-sm btn-outline-info me-1">
+                                        <i class="bi bi-chat-dots"></i> Detalle / Chat
+                                    </a>
                                     @if (p.Status != "Vendida")
                                     {
                                         <a asp-action="Edit" asp-route-id="@p.Id"

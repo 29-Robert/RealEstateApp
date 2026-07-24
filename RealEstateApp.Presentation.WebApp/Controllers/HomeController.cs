@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Application.ViewModels.Message;
+using RealEstateApp.Application.ViewModels.Offer;
 using RealEstateApp.Infrastructure.Identity.Entities;
 
 namespace RealEstateApp.Presentation.WebApp.Controllers
@@ -13,19 +15,22 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         private readonly IFavoriteService _favoriteService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMessageService _messageService;
+        private readonly IOfferService _offerService;
 
         public HomeController(
             IPropertyService propertyService,
             IPropertyTypeService propertyTypeService,
             IFavoriteService favoriteService,
             UserManager<ApplicationUser> userManager,
-            IMessageService messageService)
+            IMessageService messageService,
+            IOfferService offerService)
         {
             _propertyService = propertyService;
             _propertyTypeService = propertyTypeService;
             _favoriteService = favoriteService;
             _userManager = userManager;
             _messageService = messageService;
+            _offerService = offerService;
         }
 
         public async Task<IActionResult> Index(
@@ -87,7 +92,7 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Marcar si es favorita y cargar el chat en la vista de detalle si es cliente
+            // Marcar si es favorita, cargar chat y ofertas en la vista de detalle si es cliente
             if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
             {
                 var user = await _userManager.GetUserAsync(User);
@@ -97,6 +102,18 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
                     property.IsFavorite = favoriteIds.Contains(property.Id);
 
                     property.ChatMessages = await _messageService.GetConversationAsync(property.Id, user.Id);
+
+                    // Ofertas
+                    var offers = await _offerService.GetClientOffersAsync(property.Id, user.Id);
+                    ViewBag.ClientOffers = offers;
+
+                    bool hasAcceptedOffer = await _offerService.HasAcceptedOfferAsync(property.Id);
+                    bool hasPendingOffer = await _offerService.HasPendingOfferAsync(property.Id, user.Id);
+                    bool disableOfferButton = property.Status != "Disponible" || hasAcceptedOffer || hasPendingOffer;
+
+                    ViewBag.DisableOfferButton = disableOfferButton;
+                    ViewBag.HasAcceptedOffer = hasAcceptedOffer;
+                    ViewBag.HasPendingOffer = hasPendingOffer;
                 }
             }
 
@@ -104,14 +121,10 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Cliente")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendMessage(SendMessageViewModel vm)
         {
-            if (User.Identity == null || !User.Identity.IsAuthenticated || !User.IsInRole("Cliente"))
-            {
-                return Challenge();
-            }
-
             if (!ModelState.IsValid)
             {
                 TempData["ChatError"] = "Debe escribir un mensaje antes de enviarlo.";
@@ -133,6 +146,60 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
 
             await _messageService.SendMessageAsync(vm, user.Id);
             return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Cliente")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendOffer(SendOfferViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["OfferError"] = errors;
+                return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var property = await _propertyService.GetByIdAsync(vm.PropertyId);
+            if (property == null)
+            {
+                TempData["OfferError"] = "La propiedad no existe.";
+                return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+            }
+
+            if (property.Status != "Disponible")
+            {
+                TempData["OfferError"] = "Esta propiedad no está disponible para realizar ofertas.";
+                return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+            }
+
+            if (await _offerService.HasAcceptedOfferAsync(vm.PropertyId))
+            {
+                TempData["OfferError"] = "Esta propiedad ya tiene una oferta aceptada y no permite nuevas ofertas.";
+                return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+            }
+
+            if (await _offerService.HasPendingOfferAsync(vm.PropertyId, user.Id))
+            {
+                TempData["OfferError"] = "Ya tiene una oferta pendiente para esta propiedad.";
+                return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+            }
+
+            await _offerService.CreateOfferAsync(vm, user.Id);
+            TempData["OfferSuccess"] = "Oferta enviada exitosamente.";
+            return RedirectToAction(nameof(Details), new { id = vm.PropertyId });
+        }
+
+        [Authorize(Roles = "Cliente")]
+        public IActionResult ClientHome()
+        {
+            return RedirectToAction("Index");
         }
     }
 }

@@ -1,8 +1,13 @@
 @using RealEstateApp.Application.DTOs.Property
+@using RealEstateApp.Application.DTOs.Offer
+@using RealEstateApp.Domain.Enums
+@using System.Security.Claims
 @model PropertyDetailDto
 
 @{
     ViewData["Title"] = Model.Title;
+    var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    bool isOwnProperty = Model.AgentId == currentUserId;
 }
 
 <style>
@@ -162,7 +167,42 @@
                         <span class="badge bg-success fs-6">@Model.PropertyTypeName</span>
                         <span class="badge bg-secondary fs-6">Cód. @Model.Code</span>
                     </div>
-                    <h1 class="h2 fw-bold mb-0">@Model.Title</h1>
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    {
+                        @if (User.IsInRole("Cliente"))
+                        {
+                            <div class="d-inline-flex align-items-center gap-3 flex-wrap">
+                                <h1 class="h2 fw-bold mb-0">@Model.Title</h1>
+                                <form asp-controller="Client" asp-action="ToggleFavorite" method="post" class="d-inline">
+                                    <input type="hidden" name="propertyId" value="@Model.Id" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" style="border-radius: 20px;">
+                                        @if (Model.IsFavorite)
+                                        {
+                                            <i class="bi bi-heart-fill me-1 text-danger"></i> @:Quitar de Favoritos
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-heart me-1"></i> @:Guardar en Favoritos
+                                        }
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <h1 class="h2 fw-bold mb-0">@Model.Title</h1>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-inline-flex align-items-center gap-3 flex-wrap">
+                            <h1 class="h2 fw-bold mb-0">@Model.Title</h1>
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-secondary btn-sm" style="border-radius: 20px;">
+                                <i class="bi bi-heart me-1"></i> Guardar en Favoritos
+                            </a>
+                        </div>
+                    }
                 </div>
                 <div class="price-display mt-2">$@Model.Price.ToString("N2")</div>
             </div>
@@ -222,59 +262,78 @@
             }
 
             <!-- Chat con el Agente -->
-            @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                @if (User.IsInRole("Cliente"))
+                {
+                    <div class="card mt-5 shadow border-0 rounded-3">
+                        <div class="card-header bg-dark text-white py-3">
+                            <h4 class="mb-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Chat con el Agente</h4>
+                        </div>
+                        <div class="card-body p-4">
+                            @if (TempData["ChatError"] != null)
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ChatError"]
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            }
+
+                            <div class="chat-box mb-4 d-flex flex-column" id="chatContainer" style="max-height: 350px; overflow-y: auto;">
+                                @if (Model.ChatMessages != null && Model.ChatMessages.Any())
+                                {
+                                    @foreach (var msg in Model.ChatMessages)
+                                    {
+                                        <div class="chat-message @(msg.IsFromClient ? "client" : "agent") shadow-sm">
+                                            <div class="fw-bold small mb-1">
+                                                @(msg.IsFromClient ? "Tú" : (msg.AgentName ?? "Agente"))
+                                            </div>
+                                            <p class="mb-0">@msg.Content</p>
+                                            <div class="chat-meta mt-1">
+                                                @msg.SentAt.ToString("g")
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center text-muted py-5">
+                                        <i class="bi bi-chat-text" style="font-size: 3rem;"></i>
+                                        <p class="mt-2">No hay mensajes anteriores en esta conversación. ¡Envía un mensaje para comenzar!</p>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Formulario de envío -->
+                            <form asp-controller="Home" asp-action="SendMessage" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="PropertyId" value="@Model.Id" />
+                                <input type="hidden" name="AgentId" value="@Model.AgentId" />
+                                
+                                <div class="input-group">
+                                    <textarea name="Content" class="form-control" rows="2" placeholder="Escribe tu mensaje aquí..." required maxlength="1000"></textarea>
+                                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                        Enviar <i class="bi bi-send-fill ms-1"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+            }
+            else
             {
                 <div class="card mt-5 shadow border-0 rounded-3">
                     <div class="card-header bg-dark text-white py-3">
                         <h4 class="mb-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Chat con el Agente</h4>
                     </div>
-                    <div class="card-body p-4">
-                        @if (TempData["ChatError"] != null)
-                        {
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ChatError"]
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        }
-
-                        <div class="chat-box mb-4 d-flex flex-column" id="chatContainer" style="max-height: 350px; overflow-y: auto;">
-                            @if (Model.ChatMessages != null && Model.ChatMessages.Any())
-                            {
-                                @foreach (var msg in Model.ChatMessages)
-                                {
-                                    <div class="chat-message @(msg.IsFromClient ? "client" : "agent") shadow-sm">
-                                        <div class="fw-bold small mb-1">
-                                            @(msg.IsFromClient ? "Tú" : (msg.AgentName ?? "Agente"))
-                                        </div>
-                                        <p class="mb-0">@msg.Content</p>
-                                        <div class="chat-meta mt-1">
-                                            @msg.SentAt.ToString("g")
-                                        </div>
-                                    </div>
-                                }
-                            }
-                            else
-                            {
-                                <div class="text-center text-muted py-5">
-                                    <i class="bi bi-chat-text" style="font-size: 3rem;"></i>
-                                    <p class="mt-2">No hay mensajes anteriores en esta conversación. ¡Envía un mensaje para comenzar!</p>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Formulario de envío -->
-                        <form asp-controller="Home" asp-action="SendMessage" method="post">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="PropertyId" value="@Model.Id" />
-                            <input type="hidden" name="AgentId" value="@Model.AgentId" />
-                            
-                            <div class="input-group">
-                                <textarea name="Content" class="form-control" rows="2" placeholder="Escribe tu mensaje aquí..." required maxlength="1000"></textarea>
-                                <button type="submit" class="btn btn-primary px-4 fw-bold">
-                                    Enviar <i class="bi bi-send-fill ms-1"></i>
-                                </button>
-                            </div>
-                        </form>
+                    <div class="card-body p-4 text-center">
+                        <i class="bi bi-lock-fill text-warning fs-1 mb-3"></i>
+                        <h5 class="fw-bold">Chat Protegido</h5>
+                        <p class="text-muted small">Inicia sesión como Cliente para guardar en favoritos, chatear con el agente o realizar una oferta económica.</p>
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-sm fw-bold px-4 rounded-3 mt-2">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión
+                        </a>
                     </div>
                 </div>
             }
@@ -310,14 +369,169 @@
 
                     <a asp-controller="Agent" asp-action="Properties"
                        asp-route-agentId="@Model.AgentId"
-                       class="btn btn-outline-primary w-100">
+                       class="btn btn-outline-primary w-100 mb-2">
                         <i class="bi bi-houses me-2"></i>Ver más propiedades del agente
                     </a>
+
+                    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Agente") && isOwnProperty)
+                    {
+                        <a asp-controller="Agent" asp-action="PropertyDetails" asp-route-id="@Model.Id" class="btn btn-warning w-100 fw-bold">
+                            <i class="bi bi-gear-fill me-2"></i>Gestionar propiedad
+                        </a>
+                    }
                 </div>
             </div>
+
+            <!-- Ofertas Económicas -->
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                @if (User.IsInRole("Cliente"))
+                {
+                    var clientOffers = ViewBag.ClientOffers as List<OfferDto> ?? new List<OfferDto>();
+                    bool disableOfferButton = ViewBag.DisableOfferButton ?? false;
+                    bool hasPendingOffer = ViewBag.HasPendingOffer ?? false;
+                    bool hasAcceptedOffer = ViewBag.HasAcceptedOffer ?? false;
+
+                    <div class="card shadow border-0 rounded-3 mt-4">
+                        <div class="card-header bg-success text-white py-3">
+                            <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Ofertas Económicas</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            @if (TempData["OfferError"] != null)
+                            {
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["OfferError"]
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            }
+                            @if (TempData["OfferSuccess"] != null)
+                            {
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-check-circle-fill me-2"></i> @TempData["OfferSuccess"]
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            }
+
+                            @if (hasAcceptedOffer)
+                            {
+                                <div class="alert alert-info py-2 mb-3 small">
+                                    <i class="bi bi-info-circle me-1"></i> Esta propiedad ya tiene una oferta aceptada.
+                                </div>
+                            }
+                            else if (hasPendingOffer)
+                            {
+                                <div class="alert alert-warning py-2 mb-3 small">
+                                    <i class="bi bi-exclamation-triangle me-1"></i> Tienes una oferta pendiente.
+                                </div>
+                            }
+
+                            <!-- Botón para disparar Modal -->
+                            <button type="button" class="btn btn-success w-100 fw-bold py-2 rounded-3 mb-4" 
+                                    data-bs-toggle="modal" data-bs-target="#newOfferModal"
+                                    @(disableOfferButton ? "disabled" : "")>
+                                <i class="bi bi-plus-circle me-2"></i>Enviar nueva oferta
+                            </button>
+
+                            <!-- Historial de ofertas -->
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Tus Ofertas</h6>
+                            @if (clientOffers.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Monto</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var offer in clientOffers)
+                                            {
+                                                <tr>
+                                                    <td>@offer.OfferDate.ToString("dd/MM/yyyy")</td>
+                                                    <td class="fw-bold text-success">$@offer.Amount.ToString("N2")</td>
+                                                    <td>
+                                                        @if (offer.Status == OfferStatus.Pendiente)
+                                                        {
+                                                            <span class="badge bg-warning text-dark">Pendiente</span>
+                                                        }
+                                                        else if (offer.Status == OfferStatus.Aceptada)
+                                                        {
+                                                            <span class="badge bg-success">Aceptada</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-danger">Rechazada</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted text-center small my-2">No has realizado ofertas.</p>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="card shadow border-0 rounded-3 mt-4">
+                    <div class="card-header bg-success text-white py-3">
+                        <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Ofertas Económicas</h5>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        <i class="bi bi-lock-fill text-warning fs-1 mb-3"></i>
+                        <h5 class="fw-bold">Ofertas Protegidas</h5>
+                        <p class="text-muted small">Inicia sesión como Cliente para guardar en favoritos, chatear con el agente o realizar una oferta económica.</p>
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-success w-100 fw-bold py-2 rounded-3 mt-2">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión
+                        </a>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
+
+<!-- Modal de Nueva Oferta -->
+@if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Cliente"))
+{
+    <div class="modal fade" id="newOfferModal" tabindex="-1" aria-labelledby="newOfferModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold" id="newOfferModalLabel"><i class="bi bi-cash-coin me-2"></i>Realizar Oferta Económica</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form asp-controller="Home" asp-action="SendOffer" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="PropertyId" value="@Model.Id" />
+                    
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Monto Ofertado (DOP)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="Amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" required />
+                            </div>
+                            <small class="text-muted mt-1 d-block">Por favor, escribe un monto decimal mayor que cero.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light p-3">
+                        <button type="button" class="btn btn-secondary fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success fw-bold">Enviar oferta</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
 
 @section Scripts {
     <script>

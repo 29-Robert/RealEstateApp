@@ -94,6 +94,16 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 };
             }
 
+            if (roles.Contains("Cliente") && !user.IsActive)
+            {
+                await _signInManager.SignOutAsync();
+                return new AuthenticationResponseDto
+                {
+                    HasError = true,
+                    ErrorDescription = "Su cuenta de cliente ha sido inactivada. No puede iniciar sesión."
+                };
+            }
+
             var response = new AuthenticationResponseDto
             {
                 Id = user.Id,
@@ -380,9 +390,6 @@ namespace RealEstateApp.Infrastructure.Identity.Services
 
             foreach (var user in agentsInRole)
             {
-                // Contamos las propiedades asociadas a este Agente.
-                // Nota: Si en 'Property.cs' el Dev B usó un nombre de campo diferente a 'AgentId' 
-                // (como 'CreatedBy' o 'UsuarioId'), solo debes reemplazar 'AgentId' por ese nombre aquí abajo.
                 int count = properties.Count(p => p.AgentId == user.Id);
 
                 agentList.Add(new AgentResponseDto

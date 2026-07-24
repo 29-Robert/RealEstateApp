@@ -4,6 +4,7 @@ using RealEstateApp.Application.DTOs.Property;
 using RealEstateApp.Application.DTOs.PropertyTypes;
 using RealEstateApp.Application.DTOs.SaleTypes;
 using RealEstateApp.Application.DTOs.Message;
+using RealEstateApp.Application.DTOs.Offer;
 using RealEstateApp.Application.ViewModels.Improvements;
 using RealEstateApp.Application.ViewModels.PropertyTypes;
 using RealEstateApp.Application.ViewModels.SaleTypes;
@@ -132,6 +133,10 @@ namespace RealEstateApp.Application.Mappings
             CreateMap<Message, MessageDto>()
                 .ForMember(dest => dest.ClientName, opt => opt.Ignore())
                 .ForMember(dest => dest.AgentName, opt => opt.Ignore())
+                .ReverseMap();
+
+            CreateMap<Offer, OfferDto>()
+                .ForMember(dest => dest.ClientFullName, opt => opt.Ignore())
                 .ReverseMap();
         }
     }

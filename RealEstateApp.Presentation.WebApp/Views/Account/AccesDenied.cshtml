@@ -1,5 +1,22 @@
-﻿@{
+@{
     ViewData["Title"] = "Acceso Denegado";
+
+    string returnUrl = Url.Action("Index", "Home") ?? "/";
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        if (User.IsInRole("Cliente"))
+        {
+            returnUrl = Url.Action("ClientHome", "Home") ?? "/Home/ClientHome";
+        }
+        else if (User.IsInRole("Agente"))
+        {
+            returnUrl = Url.Action("Index", "Agent") ?? "/Agent/Index";
+        }
+        else if (User.IsInRole("Administrador"))
+        {
+            returnUrl = Url.Action("Index", "Admin") ?? "/Admin/Index";
+        }
+    }
 }
 
 <div class="container my-5">
@@ -12,10 +29,9 @@
             </div>
 
             @* Mensajes de Error *@
-            <h1 class="fw-black text-dark display-5 mb-3">Acceso Restringido</h1>
+            <h1 class="fw-bold text-dark display-6 mb-3">No tiene permisos para acceder a esta sección.</h1>
             <p class="text-muted fs-5 mb-4">
-                Lo sentimos, no tienes los permisos necesarios para visualizar el contenido de esta sección.
-                Cada rol dentro de <strong>RealEstateApp</strong> tiene áreas de trabajo específicas asignadas.
+                Lo sentimos, tu rol actual de usuario no tiene los privilegios requeridos para ver este contenido.
             </p>
 
             @* Caja informativa de seguridad *@
@@ -23,21 +39,21 @@
                 <div class="d-flex align-items-center">
                     <i class="bi bi-exclamation-triangle-fill text-warning fs-3 me-3"></i>
                     <div>
-                        <span class="fw-bold d-block text-dark">¿Por qué veo esto?</span>
-                        <small class="text-muted">Si iniciaste sesión con una cuenta de Cliente o Agente, no puedes acceder a los módulos administrativos del sistema.</small>
+                        <span class="fw-bold d-block text-dark">Área Restringida</span>
+                        <small class="text-muted">Si necesitas acceder a esta sección, asegúrate de haber iniciado sesión con las credenciales correspondientes.</small>
                     </div>
                 </div>
             </div>
 
             @* Botones de Acción / Retorno Seguro *@
             <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                <a asp-controller="Home" asp-action="Index" class="btn btn-primary fw-bold px-4 py-2 rounded-2">
-                    <i class="bi bi-house-door-fill me-2"></i> Ir al Inicio Principal
+                <a href="@returnUrl" class="btn btn-primary fw-bold px-4 py-2 rounded-2">
+                    <i class="bi bi-house-door-fill me-2"></i> Volver al Inicio
                 </a>
 
                 <form asp-controller="Account" asp-action="LogOut" method="post" class="d-inline">
                     <button type="submit" class="btn btn-outline-secondary fw-semibold px-4 py-2 rounded-2 w-100">
-                        <i class="bi bi-box-arrow-right me-2"></i> Cambiar de Cuenta
+                        <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión / Cambiar de Cuenta
                     </button>
                 </form>
             </div>

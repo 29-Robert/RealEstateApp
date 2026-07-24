@@ -92,9 +92,16 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
             return RedirectToAction(nameof(Login));
         }
 
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View("AccesDenied");
+        }
+
+        [HttpGet]
         public IActionResult AccesDenied()
         {
-            return View();
+            return RedirectToAction(nameof(AccessDenied));
         }
 
         private IActionResult RedirectByRole()
