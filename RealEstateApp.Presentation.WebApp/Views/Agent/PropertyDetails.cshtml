@@ -1,0 +1,229 @@
+@using RealEstateApp.Application.DTOs.Property
+@using RealEstateApp.Application.ViewModels.Message
+@using RealEstateApp.Application.ViewModels.Offer
+@using RealEstateApp.Domain.Enums
+@model PropertyDetailDto
+@{
+    ViewData["Title"] = $"Detalle - {Model.Title}";
+    var conversations = ViewBag.Conversations as List<AgentConversationViewModel> ?? new List<AgentConversationViewModel>();
+}
+
+<!-- Estilos inspirados en Home/Details.cshtml -->
+<style>
+    .carousel-img {
+        height: 400px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+    .spec-badge {
+        background: #f0f4ff;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+    }
+    .spec-badge i { font-size: 1.4rem; color: #0d6efd; }
+    .spec-badge .value { font-size: 1.2rem; font-weight: 700; }
+    .spec-badge .label { font-size: 0.75rem; color: #6c757d; }
+    .improvement-chip {
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        color: #2e7d32;
+        display: inline-block;
+        margin: 2px;
+    }
+</style>
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Property" asp-action="Index">Mis Propiedades</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <!-- Columna principal: Detalle de la propiedad -->
+        <div class="col-lg-8">
+            <!-- Carrusel de imágenes -->
+            @if (Model.ImagePaths != null && Model.ImagePaths.Any())
+            {
+                <div id="propertyCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+                    <div class="carousel-inner rounded-3 shadow">
+                        @for (int i = 0; i < Model.ImagePaths.Count; i++)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                <img src="@Model.ImagePaths[i]" class="carousel-img d-block w-100" alt="Imagen @(i+1)">
+                            </div>
+                        }
+                    </div>
+                    @if (Model.ImagePaths.Count > 1)
+                    {
+                        <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon"></span>
+                        </button>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="bg-light rounded-3 d-flex align-items-center justify-content-center mb-4" style="height:300px;">
+                    <i class="bi bi-image text-muted" style="font-size:3rem;"></i>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <span class="badge bg-primary mb-2">@Model.SaleTypeName</span>
+                    <span class="badge bg-success mb-2">@Model.PropertyTypeName</span>
+                    <h1 class="h3 fw-bold">@Model.Title</h1>
+                </div>
+                <div class="text-primary fw-bold fs-3">$@Model.Price.ToString("N2")</div>
+            </div>
+
+            <!-- Especificaciones -->
+            <div class="row g-3 mb-4">
+                <div class="col-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-door-open d-block mb-1"></i>
+                        <div class="value">@Model.Rooms</div>
+                        <div class="label">Hab.</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-droplet d-block mb-1"></i>
+                        <div class="value">@Model.Bathrooms</div>
+                        <div class="label">Baños</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-rulers d-block mb-1"></i>
+                        <div class="value">@Model.Size</div>
+                        <div class="label">m²</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="spec-badge">
+                        <i class="bi bi-tag d-block mb-1"></i>
+                        <div class="value" style="font-size:0.9rem;">@Model.Status</div>
+                        <div class="label">Estado</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-4">
+                <h5 class="fw-bold"><i class="bi bi-file-text me-2 text-primary"></i>Descripción</h5>
+                <p class="text-muted lh-lg">@Model.Description</p>
+            </div>
+
+            <!-- Mejoras -->
+            @if (Model.Improvements != null && Model.Improvements.Any())
+            {
+                <div class="mb-4">
+                    <h5 class="fw-bold"><i class="bi bi-tools me-2 text-primary"></i>Mejoras</h5>
+                    <div>
+                        @foreach (var imp in Model.Improvements)
+                        {
+                            <span class="improvement-chip">@imp</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Columna lateral: Conversaciones -->
+        <div class="col-lg-4">
+            <div class="card shadow border-0 rounded-3">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Conversaciones</h5>
+                </div>
+                <div class="card-body p-3">
+                    @if (conversations.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var chat in conversations)
+                            {
+                                <a asp-controller="Agent" asp-action="Conversation" 
+                                   asp-route-propertyId="@Model.Id" 
+                                   asp-route-clientId="@chat.ClientId" 
+                                   class="list-group-item list-group-item-action py-3 border-bottom border-0">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1 fw-bold text-primary">@chat.ClientName</h6>
+                                        <small class="text-muted">@chat.LastMessageDate.ToString("g")</small>
+                                    </div>
+                                    <p class="mb-1 text-muted text-truncate small">@chat.LastMessage</p>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-chat-left-dots fs-1 mb-2"></i>
+                            <p class="mb-0 small">No hay conversaciones iniciadas sobre esta propiedad.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Ofertas Recibidas (Solo Agente) -->
+            @{
+                var offers = ViewBag.PropertyOffers as List<AgentPropertyOfferGroupViewModel> ?? new List<AgentPropertyOfferGroupViewModel>();
+            }
+            <div class="card shadow border-0 rounded-3 mt-4">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Ofertas Recibidas</h5>
+                </div>
+                <div class="card-body p-3">
+                    @if (offers.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var offer in offers)
+                            {
+                                <a asp-controller="Agent" asp-action="ClientOffers" 
+                                   asp-route-propertyId="@Model.Id" 
+                                   asp-route-clientId="@offer.ClientId" 
+                                   class="list-group-item list-group-item-action py-3 border-bottom border-0">
+                                    <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                        <h6 class="mb-0 fw-bold text-success">@offer.ClientName</h6>
+                                        <span class="badge bg-secondary">@offer.OfferCount @(offer.OfferCount == 1 ? "oferta" : "ofertas")</span>
+                                    </div>
+                                    <div class="d-flex w-100 justify-content-between align-items-center mt-2">
+                                        <span class="small fw-semibold text-primary">Última: $@offer.LastOfferAmount.ToString("N2")</span>
+                                        @if (offer.LastOfferStatus == OfferStatus.Pendiente)
+                                        {
+                                            <span class="badge bg-warning text-dark small">Pendiente</span>
+                                        }
+                                        else if (offer.LastOfferStatus == OfferStatus.Aceptada)
+                                        {
+                                            <span class="badge bg-success small">Aceptada</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger small">Rechazada</span>
+                                        }
+                                    </div>
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">@offer.LastOfferDate.ToString("g")</small>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-cash-coin fs-1 mb-2"></i>
+                            <p class="mb-0 small">No se han recibido ofertas sobre esta propiedad.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

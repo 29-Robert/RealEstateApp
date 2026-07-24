@@ -1,8 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using RealEstateApp.Application.DTOs.Property;
 using RealEstateApp.Application.Interfaces.Repositories;
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Domain.Entities;
+using RealEstateApp.Domain.Enums;
 
 namespace RealEstateApp.Application.Services
 {
@@ -56,7 +57,7 @@ namespace RealEstateApp.Application.Services
 
             var allProperties = await _propertyRepository.GetAllAsync();
             var favoriteProperties = allProperties
-                .Where(p => clientFavoritePropertyIds.Contains(p.Id))
+                .Where(p => clientFavoritePropertyIds.Contains(p.Id) && p.PropertyStatus == PropertyStatusEnum.Disponible)
                 .ToList();
 
             // Mapeo corregido con AutoMapper

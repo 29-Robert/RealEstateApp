@@ -188,7 +188,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("Date")
+                    b.Property<DateTime>("OfferDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("PropertyId")
@@ -204,7 +204,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PropertyId");
 
-                    b.ToTable("Offer");
+                    b.ToTable("Offers", (string)null);
                 });
 
             modelBuilder.Entity("RealEstateApp.Domain.Entities.Property", b =>

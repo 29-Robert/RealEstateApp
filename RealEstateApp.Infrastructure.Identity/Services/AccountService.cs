@@ -2,6 +2,7 @@ using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RealEstateApp.Application.DTOs.Account;
@@ -9,11 +10,11 @@ using RealEstateApp.Application.DTOs.Email;
 using RealEstateApp.Application.Interfaces.Repositories; 
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Application.ViewModels.Users;
+using RealEstateApp.Core.Application.ViewModels.Account;
 using RealEstateApp.Domain.Entities;
 using RealEstateApp.Domain.Enums;
 using RealEstateApp.Domain.Settings;
 using RealEstateApp.Infrastructure.Identity.Entities;
-using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Security.Claims;
@@ -91,6 +92,16 @@ namespace RealEstateApp.Infrastructure.Identity.Services
                 {
                     HasError = true,
                     ErrorDescription = "Su cuenta de agente ha sido inactivada por el administrador. No puede iniciar sesión."
+                };
+            }
+
+            if (roles.Contains("Cliente") && !user.IsActive)
+            {
+                await _signInManager.SignOutAsync();
+                return new AuthenticationResponseDto
+                {
+                    HasError = true,
+                    ErrorDescription = "Su cuenta de cliente ha sido inactivada. No puede iniciar sesión."
                 };
             }
 
@@ -380,9 +391,6 @@ namespace RealEstateApp.Infrastructure.Identity.Services
 
             foreach (var user in agentsInRole)
             {
-                // Contamos las propiedades asociadas a este Agente.
-                // Nota: Si en 'Property.cs' el Dev B usó un nombre de campo diferente a 'AgentId' 
-                // (como 'CreatedBy' o 'UsuarioId'), solo debes reemplazar 'AgentId' por ese nombre aquí abajo.
                 int count = properties.Count(p => p.AgentId == user.Id);
 
                 agentList.Add(new AgentResponseDto
@@ -508,5 +516,150 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             return response;
         }
 
+        public async Task<RegisterResponseDto> UpdateAdminOrDeveloperAsync(EditUserViewModel vm)
+        {
+            var response = new RegisterResponseDto();
+            var user = await _userManager.FindByIdAsync(vm.Id);
+            if (user == null)
+            {
+                response.HasError = true;
+                response.ErrorDescription = "El usuario no existe.";
+                return response;
+            }
+
+            var userByEmail = await _userManager.FindByEmailAsync(vm.Email);
+            if (userByEmail != null && userByEmail.Id != vm.Id)
+            {
+                response.HasError = true;
+                response.ErrorDescription = $"El correo '{vm.Email}' ya está registrado.";
+                return response;
+            }
+
+            var userByUsername = await _userManager.FindByNameAsync(vm.Username);
+            if (userByUsername != null && userByUsername.Id != vm.Id)
+            {
+                response.HasError = true;
+                response.ErrorDescription = $"El nombre de usuario '{vm.Username}' ya está en uso.";
+                return response;
+            }
+
+            user.FirstName = vm.FirstName;
+            user.LastName = vm.LastName;
+            user.Email = vm.Email;
+            user.UserName = vm.Username;
+            user.PhoneNumber = vm.PhoneNumber;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                response.HasError = true;
+                response.ErrorDescription = errors;
+                return response;
+            }
+
+            if (!string.IsNullOrEmpty(vm.Password))
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetResult = await _userManager.ResetPasswordAsync(user, token, vm.Password);
+                if (!resetResult.Succeeded)
+                {
+                    var errors = string.Join(", ", resetResult.Errors.Select(e => e.Description));
+                    response.HasError = true;
+                    response.ErrorDescription = $"Usuario actualizado, pero falló el cambio de contraseña: {errors}";
+                    return response;
+                }
+            }
+
+            return response;
+        }
+
+        public async Task<RegisterResponseDto> DeleteAdminOrDeveloperAsync(string id)
+        {
+            var response = new RegisterResponseDto();
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                response.HasError = true;
+                response.ErrorDescription = "El usuario especificado no existe.";
+                return response;
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                response.HasError = true;
+                response.ErrorDescription = "No se pudo eliminar el usuario de las credenciales de Identity.";
+                return response;
+            }
+
+            return response;
+        }
+
+        public async Task ToggleUserStatusAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("El usuario especificado no existe en el sistema.");
+            }
+
+            user.IsActive = !user.IsActive;
+            await _userManager.UpdateAsync(user);
+        }
+
+        public async Task<SaveProfileViewModel> GetUserProfileByIdAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return null!;
+            }
+
+            return new SaveProfileViewModel
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber ?? "",
+                ImagePath = user.PhotoPath 
+            };
+        }
+
+        public async Task<UpdateProfileResponse> UpdateProfileAsync(SaveProfileViewModel vm)
+        {
+            var response = new UpdateProfileResponse { HasError = false };
+
+            // 1. Buscar al usuario en la base de datos
+            var user = await _userManager.FindByIdAsync(vm.Id);
+            if (user == null)
+            {
+                response.HasError = true;
+                response.ErrorDescription = $"No se encontró ningún usuario con el ID '{vm.Id}'.";
+                return response;
+            }
+
+            // 2. Actualizar los datos obligatorios del perfil
+            user.FirstName = vm.FirstName;
+            user.LastName = vm.LastName;
+            user.PhoneNumber = vm.PhoneNumber;
+
+            // 3. Si vm.ImagePath trae un valor, se actualiza PhotoPath. Si es null/vacío, preserva el que ya tenía.
+            if (!string.IsNullOrWhiteSpace(vm.ImagePath))
+            {
+                user.PhotoPath = vm.ImagePath;
+            }
+
+            // 4. Guardar los cambios con UserManager
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                response.HasError = true;
+                response.ErrorDescription = string.Join(", ", result.Errors.Select(e => e.Description));
+                return response;
+            }
+
+            return response;
+        }
     }
 }

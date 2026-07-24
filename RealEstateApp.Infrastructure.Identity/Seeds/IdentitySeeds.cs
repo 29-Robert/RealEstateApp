@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using RealEstateApp.Domain.Enums; 
 using RealEstateApp.Infrastructure.Identity.Entities;
 using System.Data;
@@ -40,13 +40,19 @@ namespace RealEstateApp.Infrastructure.Identity.Seeds
                 IsActive = true
             };
 
-            if (await _userManager.FindByEmailAsync(defaultAdmin.Email) == null)
+            var existingAdmin = await _userManager.FindByEmailAsync(defaultAdmin.Email);
+            if (existingAdmin == null)
             {
                 var result = await _userManager.CreateAsync(defaultAdmin, "Admin123!");
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(defaultAdmin, Roles.Administrador.ToString());
                 }
+            }
+            else
+            {
+                await _userManager.RemovePasswordAsync(existingAdmin);
+                await _userManager.AddPasswordAsync(existingAdmin, "Admin123!");
             }
 
             // 3. Sembrado de Usuario Desarrollador por defecto
@@ -61,13 +67,19 @@ namespace RealEstateApp.Infrastructure.Identity.Seeds
                 IsActive = true
             };
 
-            if (await _userManager.FindByEmailAsync(defaultDev.Email) == null)
+            var existingDev = await _userManager.FindByEmailAsync(defaultDev.Email);
+            if (existingDev == null)
             {
                 var result = await _userManager.CreateAsync(defaultDev, "Admin123!");
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(defaultDev, Roles.Desarrollador.ToString()); 
                 }
+            }
+            else
+            {
+                await _userManager.RemovePasswordAsync(existingDev);
+                await _userManager.AddPasswordAsync(existingDev, "Admin123!");
             }
         }
     }

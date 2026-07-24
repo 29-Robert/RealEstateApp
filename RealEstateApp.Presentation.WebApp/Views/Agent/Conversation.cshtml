@@ -1,0 +1,148 @@
+@using RealEstateApp.Application.DTOs.Message
+@using RealEstateApp.Application.DTOs.Property
+@model List<MessageDto>
+@{
+    var property = ViewBag.Property as PropertyDetailDto;
+    string clientName = ViewBag.ClientName as string ?? "Cliente";
+    string clientId = ViewBag.ClientId as string ?? "";
+    ViewData["Title"] = $"Conversación con {clientName}";
+}
+
+<style>
+    /* Estilos del Chat */
+    .chat-box {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        padding: 20px;
+    }
+    .chat-message {
+        margin-bottom: 15px;
+        max-width: 75%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        position: relative;
+    }
+    .chat-message.client {
+        background-color: #e9ecef;
+        color: #212529;
+        margin-right: auto;
+        border-bottom-left-radius: 2px;
+    }
+    .chat-message.agent {
+        background-color: #0d6efd;
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 2px;
+    }
+    .chat-meta {
+        font-size: 0.72rem;
+        opacity: 0.85;
+        margin-top: 5px;
+    }
+    .chat-message.agent .chat-meta {
+        text-align: right;
+    }
+    .chat-message.client .chat-meta {
+        color: #6c757d;
+        text-align: left;
+    }
+</style>
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Property" asp-action="Index">Mis Propiedades</a></li>
+            @if (property != null)
+            {
+                <li class="breadcrumb-item"><a asp-controller="Agent" asp-action="PropertyDetails" asp-route-id="@property.Id">@property.Title</a></li>
+            }
+            <li class="breadcrumb-item active" aria-current="page">Conversación con @clientName</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-0 rounded-3">
+                <div class="card-header bg-primary text-white py-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-chat-fill me-2"></i>Conversación con @clientName</h5>
+                        @if (property != null)
+                        {
+                            <small class="text-white-50">Propiedad: @property.Title (Cód: @property.Code)</small>
+                        }
+                    </div>
+                    @if (property != null)
+                    {
+                        <a asp-controller="Agent" asp-action="PropertyDetails" asp-route-id="@property.Id" class="btn btn-outline-light btn-sm fw-bold">
+                            <i class="bi bi-arrow-left me-1"></i> Volver al Detalle
+                        </a>
+                    }
+                </div>
+                <div class="card-body p-4">
+                    @if (TempData["ChatError"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ChatError"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <div class="chat-box mb-4 d-flex flex-column" id="chatContainer">
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var msg in Model)
+                            {
+                                <!-- Para el Agente, los mensajes del Cliente vienen de fuera (izquierda/gris) -->
+                                <!-- Y los mensajes del Agente son enviados por él mismo (derecha/azul) -->
+                                <div class="chat-message @(msg.IsFromClient ? "client" : "agent") shadow-sm">
+                                    <div class="fw-bold small mb-1">
+                                        @(msg.IsFromClient ? clientName : "Tú")
+                                    </div>
+                                    <p class="mb-0">@msg.Content</p>
+                                    <div class="chat-meta">
+                                        @msg.SentAt.ToString("g")
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-chat-left-dots fs-1"></i>
+                                <p class="mt-2">No hay mensajes en esta conversación.</p>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Formulario de Respuesta -->
+                    <form asp-controller="Agent" asp-action="ReplyMessage" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="PropertyId" value="@(property?.Id ?? 0)" />
+                        <input type="hidden" name="ClientId" value="@clientId" />
+
+                        <div class="input-group">
+                            <textarea name="Content" class="form-control" rows="3" placeholder="Escribe tu respuesta aquí..." required maxlength="1000"></textarea>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                Responder <i class="bi bi-reply-fill ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var chatContainer = document.getElementById("chatContainer");
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        });
+    </script>
+}

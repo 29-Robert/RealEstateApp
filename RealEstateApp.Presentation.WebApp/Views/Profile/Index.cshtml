@@ -1,0 +1,106 @@
+@model RealEstateApp.Core.Application.ViewModels.Account.SaveProfileViewModel
+@{
+    ViewData["Title"] = "Mi Perfil";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0 fw-bold">Mi Perfil</h4>
+                </div>
+                <div class="card-body p-4">
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form asp-controller="Profile" asp-action="Index" method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="ImagePath" />
+
+                        <!-- Imagen de perfil centrada -->
+                        <div class="text-center mb-4">
+                            @if (!string.IsNullOrEmpty(Model?.ImagePath) && Model.ImagePath != "/images/users/default-profile.png" && Model.ImagePath != "/images/default-user.png")
+                            {
+                                <img src="@Model.ImagePath"
+                                     alt="Foto de Perfil"
+                                     class="rounded-circle img-thumbnail shadow-sm"
+                                     style="width: 150px; height: 150px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle shadow-sm mx-auto d-flex align-items-center justify-content-center text-white"
+                                     style="width: 150px; height: 150px; background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%); font-size: 3.5rem;">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Campos del perfil -->
+                        <div class="mb-3">
+                            <label asp-for="FirstName" class="form-label fw-semibold">Nombre</label>
+                            <input asp-for="FirstName" class="form-control" placeholder="Ingrese su nombre" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="LastName" class="form-label fw-semibold">Apellido</label>
+                            <input asp-for="LastName" class="form-control" placeholder="Ingrese su apellido" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label fw-semibold">Teléfono</label>
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="Ingrese su número telefónico" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="File" class="form-label fw-semibold">Foto de perfil</label>
+                            <input asp-for="File" type="file" class="form-control" accept=".jpg,.jpeg,.png" />
+                            <span asp-validation-for="File" class="text-danger"></span>
+                        </div>
+
+                        <!-- Botones de acción dinámicos -->
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            @if (User.IsInRole("Agente") || User.IsInRole("Agent"))
+                            {
+                                <a asp-controller="Property" asp-action="Index" class="btn btn-outline-secondary px-4">
+                                    <i class="bi bi-arrow-left me-1"></i> Volver atrás
+                                </a>
+                            }
+                            else if (User.IsInRole("Cliente") || User.IsInRole("Client"))
+                            {
+                                <a asp-controller="Home" asp-action="ClientHome" class="btn btn-outline-secondary px-4">
+                                    <i class="bi bi-arrow-left me-1"></i> Volver atrás
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary px-4">
+                                    <i class="bi bi-arrow-left me-1"></i> Volver atrás
+                                </a>
+                            }
+
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

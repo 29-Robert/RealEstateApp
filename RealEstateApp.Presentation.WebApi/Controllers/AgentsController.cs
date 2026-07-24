@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateApp.Application.DTOs.Agent;
 using RealEstateApp.Application.Interfaces.Services;
+using RealEstateApp.Application.ViewModels.Users;
 using RealEstateApp.Domain.Enums;
 
 namespace RealEstateApp.Presentation.WebApi.Controllers
 {
     
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
+    [Route("api/v1/[controller]")]
+    [Authorize(Roles = "Administrador,Desarrollador")]
     public class AgentsController : ControllerBase
     {
         private readonly IAgentService _agentService;
@@ -38,16 +39,28 @@ namespace RealEstateApp.Presentation.WebApi.Controllers
         [HttpGet("{id}/properties")]
         public async Task<IActionResult> GetAgentProperty(string id)
         {
+            var agent = await _agentService.GetByIdAsync(id);
+            if (agent == null)
+            {
+                return NotFound(new { Message = "El agente solicitado no existe." });
+            }
+
             var result = await _propertyService.GetByAgentAsync(id, onlyAvailable: true);
             return result.Count == 0 ? NoContent() : Ok(result);
         }
 
         // Parte administrativa: activar e inactivar agente solo para Administrador 
-        [HttpPatch("changestatus")]
-        [Authorize(nameof(Roles.Administrador))]
-        public async Task<IActionResult> ChangeStatus([FromQuery] string agentId, [FromBody] bool isActive)
+        [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> ChangeStatus([FromRoute] string id, [FromBody] ChangeStatusViewModel vm)
         {
-            var success = await _agentService.ChangeStatusAsync(agentId, isActive);
+            var agent = await _agentService.GetByIdAsync(id);
+            if (agent == null)
+            {
+                return NotFound(new { Message = "El agente solicitado no existe." });
+            }
+
+            var success = await _agentService.ChangeStatusAsync(id, vm.IsActive);
             return success ? NoContent() : NotFound();
         }
     }

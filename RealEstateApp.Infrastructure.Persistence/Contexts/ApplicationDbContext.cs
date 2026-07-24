@@ -11,10 +11,22 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
         public DbSet<Improvement> Improvements { get; set; }
         public DbSet<PropertyImage> PropertyImages { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Offer> Offers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Offer>()
+                .ToTable("Offers")
+                .Property(o => o.Amount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Offer>()
+                .HasOne(o => o.Property)
+                .WithMany(p => p.Offers)
+                .HasForeignKey(o => o.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Property>()
                 .ToTable("Properties")

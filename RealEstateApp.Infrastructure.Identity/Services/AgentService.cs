@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using RealEstateApp.Application.DTOs.Agent;
 using RealEstateApp.Application.Interfaces.Repositories;
@@ -59,6 +59,9 @@ namespace RealEstateApp.Infrastructure.Identity.Services
         {
             var agent = await _userManager.FindByIdAsync(id);
             if (agent is null) return null;
+
+            var isAgent = await _userManager.IsInRoleAsync(agent, Roles.Agente.ToString());
+            if (!isAgent) return null;
 
             var properties = await _propertyRepository.GetByAgentIdAsync(id, onlyAvailable: true);
 

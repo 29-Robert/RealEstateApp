@@ -6,6 +6,7 @@ using RealEstateApp.Infrastructure.Persistence.Contexts;
 
 namespace RealEstateApp.Infrastructure.Persistence.Repositories
 {
+    public class OfferRepository(ApplicationDbContext dbContext) : GenericRepository<Offer>(dbContext), IOfferRepository
 
     public class OfferRepository : GenericRepository<Offer>, IOfferRepository
     {
@@ -76,7 +77,8 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
         }
 
         public async Task<Offer?> RejectOfferAsync(int offerId)
-        {
+    {
+        private readonly ApplicationDbContext _dbContext = dbContext;
             var offer = await _entity.FindAsync(offerId);
             if (offer is null) return null;
 

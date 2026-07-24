@@ -1,0 +1,88 @@
+@model List<RealEstateApp.Application.DTOs.Account.AgentResponseDto>
+@{
+    ViewData["Title"] = "Mantenimiento de Agentes";
+}
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+        <h2 class="fw-bold text-dark"><i class="bi bi-people-fill me-2 text-primary"></i>Listado de Agentes</h2>
+        <span class="badge bg-secondary fs-6">@Model.Count Agentes en total</span>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            No existen agentes registrados en el sistema.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ps-3">Nombre</th>
+                            <th>Correo electrónico</th>
+                            <th>Teléfono</th>
+                            <th class="text-center">Propiedades</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-end pe-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var agent in Model)
+                        {
+                            <tr>
+                                <td class="ps-3 fw-bold">@agent.LastName, @agent.FirstName</td>
+                                <td>@agent.Email</td>
+                                <td>@agent.PhoneNumber</td>
+                                <td class="text-center">
+                                    <span class="badge bg-info text-dark fs-6">@agent.PropertyCount</span>
+                                </td>
+                                <td class="text-center">
+                                    <form asp-action="ToggleAgentStatus" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@agent.Id" />
+                                        @if (agent.IsActive)
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-success fw-semibold">
+                                                <i class="bi bi-check-circle me-1"></i>Activo
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-secondary fw-semibold">
+                                                <i class="bi bi-dash-circle me-1"></i>Inactivo
+                                            </button>
+                                        }
+                                    </form>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a asp-action="DeleteAgentConfirm" asp-route-id="@agent.Id" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash me-1"></i>Eliminar
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

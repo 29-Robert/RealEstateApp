@@ -38,7 +38,7 @@
                         @* Menú público (siempre visible) *@
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-search me-1"></i>Propiedades
+                                <i class="bi bi-house-door me-1"></i>Home
                             </a>
                         </li>
                         <li class="nav-item">
@@ -73,22 +73,46 @@
                                         <i class="bi bi-plus-circle me-2"></i>Agregar propiedad
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-controller="AgentProfile" asp-action="Index">
+                                    <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">
                                         <i class="bi bi-person-circle me-2"></i>Mi Perfil
                                     </a></li>
                                 </ul>
                             </li>
                         }
 
+                        @* Opción Mi Perfil condicional para Cliente y Agente *@
+                        @if (User.Identity != null && User.Identity.IsAuthenticated && (User.IsInRole("Cliente") || User.IsInRole("Client") || User.IsInRole("Agente") || User.IsInRole("Agent")))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Profile" asp-action="Index">
+                                    <i class="bi bi-person-circle me-1"></i>Mi Perfil
+                                </a>
+                            </li>
+                        }
+
                         @* Menú exclusivo del Administrador *@
-                        @if (User.IsInRole("Administrador"))
+                        @if (User.IsInRole("Administrador") || User.IsInRole("Admin"))
                         {
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="adminMenu" role="button"
                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-gear me-1"></i>Mantenimiento
+                                    <i class="bi bi-gear me-1"></i>Administración
                                 </a>
                                 <ul class="dropdown-menu shadow-sm" aria-labelledby="adminMenu">
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index">
+                                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Agents">
+                                        <i class="bi bi-people me-2"></i>Agentes
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Admins" asp-action="Index">
+                                        <i class="bi bi-shield-lock me-2"></i>Administradores
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Developers" asp-action="Index">
+                                        <i class="bi bi-person-badge me-2"></i>Desarrolladores
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="PropertyTypes" asp-action="Index">
                                         <i class="bi bi-tags me-2"></i>Tipos de Propiedad
                                     </a></li>
@@ -109,15 +133,15 @@
                             <li class="nav-item">
                                 <span class="nav-link text-muted">
                                     <i class="bi bi-person-check me-1"></i>@User.Identity.Name
-                                    @if (User.IsInRole("Agente"))
+                                    @if (User.IsInRole("Agente") || User.IsInRole("Agent"))
                                     {
                                         <span class="badge bg-success ms-1">Agente</span>
                                     }
-                                    else if (User.IsInRole("Administrador"))
+                                    else if (User.IsInRole("Administrador") || User.IsInRole("Admin"))
                                     {
                                         <span class="badge bg-danger ms-1">Admin</span>
                                     }
-                                    else if (User.IsInRole("Cliente"))
+                                    else if (User.IsInRole("Cliente") || User.IsInRole("Client"))
                                     {
                                         <span class="badge bg-info ms-1">Cliente</span>
                                     }
@@ -133,12 +157,12 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Account" asp-action="Login">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="btn btn-primary btn-nav-cta ms-2" asp-controller="Account" asp-action="Register">
-                                    Registrarse
+                                    Únete a la app
                                 </a>
                             </li>
                         }

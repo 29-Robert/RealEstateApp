@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateApp.Application.DTOs.Account;
@@ -7,7 +7,7 @@ using RealEstateApp.Application.ViewModels.Users;
 
 namespace RealEstateApp.Presentation.WebApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class AccountController : ControllerBase
     {
@@ -18,14 +18,19 @@ namespace RealEstateApp.Presentation.WebApi.Controllers
             _accountService = accountService;
         }
 
-        [HttpPost("authenticate")]
+        [HttpPost("login")]
         public async Task<IActionResult> AuthenticateAsync([FromBody] LoginViewModel request)
         {
             var response = await _accountService.AuthenticateAsync(request);
 
             if (response.HasError)
             {
-                return BadRequest(new { Error = response.ErrorDescription });
+                return StatusCode(StatusCodes.Status401Unauthorized, new { Error = response.ErrorDescription });
+            }
+
+            if (response.Roles != null && (response.Roles.Contains("Cliente") || response.Roles.Contains("Agente")))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { Error = "Acceso denegado. Los usuarios con rol Cliente o Agente no tienen permisos para acceder a la Web API." });
             }
 
             return Ok(response);

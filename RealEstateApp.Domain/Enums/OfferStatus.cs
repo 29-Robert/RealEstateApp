@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace RealEstateApp.Domain.Enums
 {
-    public enum OfferStatusEnum
+    public enum OfferStatus
     {
         Pendiente = 1,
-        Aceptada = 2,
-        Rechazada = 3
+        Rechazada = 2,
+        Aceptada = 3
     }
 }

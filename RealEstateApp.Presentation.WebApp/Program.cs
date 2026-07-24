@@ -18,6 +18,21 @@ try
     builder.Services.AddSharedLayerIoc(builder.Configuration);
     builder.Services.AddIdentityInfrastructure(builder.Configuration); // Registra base de datos de Identity, Roles y AccountService
 
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromHours(2);
+        options.SlidingExpiration = true;
+    });
+
+    builder.Services.Configure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
+    {
+        options.DefaultScheme = Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme;
+        options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme;
+        options.DefaultChallengeScheme = Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme;
+    });
+
     // Configuración de Controladores con Vistas (MVC)
     builder.Services.AddControllersWithViews();
 
