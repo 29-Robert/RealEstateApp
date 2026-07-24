@@ -10,6 +10,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
         public DbSet<SaleType> SaleTypes { get; set; }
         public DbSet<Improvement> Improvements { get; set; }
         public DbSet<PropertyImage> PropertyImages { get; set; }
+        public DbSet<Message> Messages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -53,6 +54,13 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
                 .HasMany<PropertyImage>(p => p.PropertyImages)
                 .WithOne(pi => pi.Property)
                 .HasForeignKey(pi => pi.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Message>()
+                .ToTable("Messages")
+                .HasOne(m => m.Property)
+                .WithMany()
+                .HasForeignKey(m => m.PropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

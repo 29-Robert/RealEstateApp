@@ -1,61 +1,65 @@
-using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using RealEstateApp.Application.DTOs.Email;
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Domain.Settings;
+using System;
+using System.Threading.Tasks;
 
 namespace RealEstateApp.Infrastructure.Shared.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly MailSettings MailSettings;
-        private readonly ILogger<MailSettings> Logger;
+        private readonly MailSettings _mailSettings;
+        private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IOptions<MailSettings> mailSettings, ILogger<MailSettings> logger)
+        public EmailService(IOptions<MailSettings> mailSettings, ILogger<EmailService> logger)
         {
-            MailSettings = mailSettings.Value;
-            Logger = logger;
+            _mailSettings = mailSettings.Value;
+            _logger = logger;
         }
 
-        public async Task SendAsync(EmailRequestDto emailRequestDto)
+        public async Task SendAsync(string to, string subject, string body)
         {
             try
             {
-                if (emailRequestDto != null && !string.IsNullOrWhiteSpace(emailRequestDto.To))
-                {
-                    MimeMessage email = new()
-                    {
-                        Sender = MailboxAddress.Parse(MailSettings.EmailFrom),
-                        Subject = emailRequestDto.Subject
-                    };
+                // 1. Crear el mensaje
+                var email = new MimeMessage();
+                email.From.Add(new MailboxAddress(_mailSettings.DisplayName ?? "", _mailSettings.EmailFrom));
+                email.To.Add(MailboxAddress.Parse(to));
+                email.Subject = subject;
 
-                    email.To.Add(MailboxAddress.Parse(emailRequestDto.To));
+                // 2. Construir el cuerpo en HTML
+                var builder = new BodyBuilder { HtmlBody = body };
+                email.Body = builder.ToMessageBody();
 
-                    BodyBuilder builder = new()
-                    {
-                        HtmlBody = emailRequestDto.HtmlBody
-                    };
+                // 3. Conectar y enviar usando MailKit
+                using var smtp = new MailKit.Net.Smtp.SmtpClient();
 
-                    email.Body = builder.ToMessageBody();
+                // Mitigación de errores de revocación y certificados locales
+                smtp.CheckCertificateRevocation = false;
+                smtp.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
-                    using SmtpClient smtpClient = new();
+                // Conectar usando Auto para soportar dinámicamente 465 y 587
+                await smtp.ConnectAsync(_mailSettings.SmtpHost, _mailSettings.SmtpPort, SecureSocketOptions.Auto);
 
-                    // Mitigación de errores de revocación y certificados autofirmados locales
-                    smtpClient.ServerCertificateValidationCallback = (s, c, h, e) => true;
-                    smtpClient.CheckCertificateRevocation = false;
+                // Autenticar con tu correo real y la contraseña de aplicación
+                await smtp.AuthenticateAsync(_mailSettings.SmtpUser, _mailSettings.SmtpPass);
 
-                    await smtpClient.ConnectAsync(MailSettings.SmtpHost, MailSettings.SmtpPort, SecureSocketOptions.StartTls);
-                    await smtpClient.AuthenticateAsync(MailSettings.SmtpUser, MailSettings.SmtpPassword);
-                    await smtpClient.SendAsync(email);
-                    await smtpClient.DisconnectAsync(true);
-                }
+                // Enviar el correo
+                await smtp.SendAsync(email);
+
+                // Desconectar limpiamente
+                await smtp.DisconnectAsync(true);
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex.Message, ex);
+                // Registrar el error en el log de la aplicación
+                _logger.LogError(ex, "Error al enviar correo electrónico a {To}. Asunto: {Subject}", to, subject);
+
+                // Lanzar para ver en Visual Studio
+                throw new Exception($"Error SMTP con MailKit: {ex.Message}", ex);
             }
         }
     }

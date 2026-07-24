@@ -217,23 +217,25 @@ namespace RealEstateApp.Infrastructure.Identity.Services
 
             if (registerVm.UserType == Roles.Cliente.ToString())
             {
-                try
-                {
-                    var verificationUrl = await GenerateVerificationUrl(newUser, origin);
+                var verificationUrl = await GenerateVerificationUrl(newUser, origin);
 
-                    await _emailService.SendAsync(new EmailRequestDto
-                    {
-                        To = newUser.Email,
-                        Subject = "Activación de Cuenta - RealEstateApp",
-                        HtmlBody = $"<h1>¡Hola {newUser.FirstName}!</h1><p>Gracias por registrarte. Para activar tu cuenta de Cliente, por favor haz clic en el siguiente enlace:</p><a href='{verificationUrl}'>Activar Mi Cuenta</a>"
-                    });
-                }
-                catch (Exception ex)
+                _ = Task.Run(async () =>
                 {
-                    _logger.LogError(ex, "El usuario se creó correctamente pero falló el envío del correo de confirmación.");
-                    response.HasError = false;
-                    response.ErrorDescription = "El usuario se creó correctamente, pero ocurrió un problema al enviar el correo de activación. Por favor contacte soporte.";
-                }
+                    try
+                    {
+                        var body = $"<h1>¡Hola {newUser.FirstName}!</h1><p>Gracias por registrarte. Para activar tu cuenta de Cliente, por favor haz clic en el siguiente enlace:</p><a href='{verificationUrl}'>Activar Mi Cuenta</a>";
+                        await _emailService.SendAsync(newUser.Email ?? "", "Activación de Cuenta - RealEstateApp", body);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"---> ERROR EN SEGUNDO PLANO ENVIANDO CORREO: {ex.Message}");
+                        if (ex.InnerException != null)
+                        {
+                            Console.WriteLine($"---> DETALLE: {ex.InnerException.Message}");
+                        }
+                        _logger.LogError(ex, "Fallo al enviar correo de confirmación en segundo plano.");
+                    }
+                });
             }
 
             return response;
@@ -272,7 +274,7 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
             var route = "/Account/ConfirmEmail";
-            var url = $"{origin}{route}?userId={user.Id}&token={encodedToken}";
+            var url = $"{origin}{route}?userId={System.Net.WebUtility.UrlEncode(user.Id)}&token={System.Net.WebUtility.UrlEncode(encodedToken)}";
             return url;
         }
 
@@ -334,6 +336,21 @@ namespace RealEstateApp.Infrastructure.Identity.Services
             }
 
             return userList;
+        }
+
+        public async Task<UserResponseDto?> GetUserByIdAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return null;
+
+            return new UserResponseDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email!,
+                UserName = user.UserName!
+            };
         }
 
         public async Task ToggleAgentStatusAsync(string agentId)

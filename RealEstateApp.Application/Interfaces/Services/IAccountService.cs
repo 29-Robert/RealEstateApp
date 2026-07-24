@@ -1,4 +1,4 @@
-﻿using RealEstateApp.Application.DTOs.Account;
+using RealEstateApp.Application.DTOs.Account;
 using RealEstateApp.Application.ViewModels.Users;
 
 namespace RealEstateApp.Application.Interfaces.Services
@@ -11,6 +11,7 @@ namespace RealEstateApp.Application.Interfaces.Services
         Task SignOutAsync();
         Task<RegisterResponseDto> RegisterAdminOrDeveloperAsync(RegisterViewModel request, string role);
         Task<List<UserResponseDto>> GetUsersInRoleAsync(string role);
+        Task<UserResponseDto?> GetUserByIdAsync(string id);
         
         Task ToggleAgentStatusAsync(string agentId);
         Task<List<AgentResponseDto>> GetAgentsListAsync();

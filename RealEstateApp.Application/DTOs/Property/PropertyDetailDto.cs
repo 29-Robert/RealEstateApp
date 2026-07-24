@@ -1,4 +1,5 @@
-﻿using System;
+using RealEstateApp.Application.DTOs.Message;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,5 +15,6 @@ namespace RealEstateApp.Application.DTOs.Property
         public string AgentFullName { get; set; } = string.Empty;
         public string AgentPhone { get; set; } = string.Empty;
         public string AgentPhotoPath { get; set; } = string.Empty;
+        public List<MessageDto> ChatMessages { get; set; } = new();
     }
 }
