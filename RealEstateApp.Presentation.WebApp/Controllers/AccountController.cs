@@ -39,10 +39,19 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
                 return View(vm);
             }
 
+            // --- BLOQUEO DE ACCESO PARA EL ROL DESARROLLADOR ---
+            if (response.Roles != null && response.Roles.Contains("Desarrollador"))
+            {
+                await _accountService.SignOutAsync();
+
+                ModelState.AddModelError(string.Empty, "Acceso denegado. Los usuarios con rol Desarrollador solo pueden acceder a la Web API.");
+                return View(vm);
+            }
+
             // Guardar datos de sesión
             HttpContext.Session.SetString("UserId", response.Id);
             HttpContext.Session.SetString("UserName", response.UserName);
-            HttpContext.Session.SetString("UserRoles", string.Join(",", response.Roles));
+            HttpContext.Session.SetString("UserRoles", string.Join(",", response.Roles!));
 
             return RedirectByRole();
         }
@@ -73,7 +82,16 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
                 return View(vm);
             }
 
-            TempData["SuccessMessage"] = "Cuenta creada exitosamente. Por favor, revisa tu correo electrónico para confirmar tu cuenta antes de iniciar sesión.";
+            // --- MENSAJES DE ÉXITO CONDICIONADOS POR ROL ---
+            if (vm.UserType == "Agente")
+            {
+                TempData["SuccessMessage"] = "Cuenta de agente creada exitosamente. Su cuenta requiere de la aprobación y activación manual por parte de un administrador para poder iniciar sesión.";
+            }
+            else // Cliente
+            {
+                TempData["SuccessMessage"] = "Cuenta creada exitosamente. Por favor, revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión.";
+            }
+
             return RedirectToAction("Login", "Account");
         }
 

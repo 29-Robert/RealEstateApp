@@ -1,0 +1,10 @@
+Administrador:
+
+Correo: admin@realestate.com
+Contraseña: Admin123!
+
+
+Desarrollador:
+
+Correo: developer@realestate.com
+Contraseña: Admin123!

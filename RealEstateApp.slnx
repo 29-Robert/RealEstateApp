@@ -2,6 +2,9 @@
   <Folder Name="/Integrantes/">
     <File Path="Integrantes.txt" />
   </Folder>
+  <Folder Name="/Usuarios Seeds/">
+    <File Path="TextFile1.txt" />
+  </Folder>
   <Project Path="RealEstateApp.Application/RealEstateApp.Application.csproj" />
   <Project Path="RealEstateApp.Domain/RealEstateApp.Domain.csproj" />
   <Project Path="RealEstateApp.Infrastructure.Identity/RealEstateApp.Infrastructure.Identity.csproj" />
