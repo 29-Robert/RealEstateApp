@@ -18,7 +18,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Offer>()
-                .ToTable("Offers")
+                .ToTable("Offer")
                 .Property(o => o.Amount)
                 .HasColumnType("decimal(18,2)");
 
