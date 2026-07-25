@@ -133,10 +133,10 @@ namespace RealEstateApp.Application.Services
             return dtos;
         }
 
-        // Sobrecarga para cumplir con IOfferService sin romper la firma
         public async Task<List<OfferDto>> GetByAgentAsync(string agentId) => await GetAgentOffersAsync(agentId);
 
-        public async Task AcceptOfferAsync(int offerId, string? agentId = null)
+        // Aceptar Ofertas
+        public async Task AcceptOfferAsync(int offerId, string? agentId)
         {
             await AcceptOfferAsync(offerId);
         }
@@ -169,10 +169,8 @@ namespace RealEstateApp.Application.Services
             }
         }
 
-        // Sobrecarga de un solo parámetro para cumplir con la interfaz
-        public async Task AcceptOfferAsync(int offerId) => await AcceptOfferAsync(offerId, null);
-
-        public async Task RejectOfferAsync(int offerId, string? agentId = null)
+        // Rechazar Ofertas
+        public async Task RejectOfferAsync(int offerId, string? agentId)
         {
             await RejectOfferAsync(offerId);
         }
@@ -185,9 +183,6 @@ namespace RealEstateApp.Application.Services
             offer.Status = OfferStatus.Rechazada;
             await _offerRepository.UpdateAsync(offer);
         }
-
-        // Sobrecarga de un solo parámetro para cumplir con la interfaz
-        public async Task RejectOfferAsync(int offerId) => await RejectOfferAsync(offerId, null);
 
         public async Task<bool> HasPendingOfferAsync(int propertyId, string clientId)
         {
