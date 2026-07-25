@@ -10,6 +10,9 @@ namespace RealEstateApp.Application.DTOs.Property
     public class SavePropertyDto
     {
         [Required]
+        public int Id { get; set; }
+
+        [Required]
         public string Title { get; set; } = string.Empty;
 
         [Required]

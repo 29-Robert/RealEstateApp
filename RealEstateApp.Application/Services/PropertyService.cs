@@ -84,8 +84,8 @@ namespace RealEstateApp.Application.Services
                 PropertyTypeId = dto.PropertyTypeId,
                 SaleTypeId = dto.SaleTypeId,
                 AgentId = dto.AgentId,
-                Status = PropertyStatusEnum.Disponible.ToString(),
-                PropertyStatus = PropertyStatusEnum.Disponible
+                Status = PropertyStatus.Disponible.ToString(),
+                PropertyStatus = PropertyStatus.Disponible
             };
 
             property = await _propertyRepository.AddAsync(property);

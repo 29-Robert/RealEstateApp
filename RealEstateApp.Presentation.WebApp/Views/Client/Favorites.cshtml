@@ -9,10 +9,9 @@
 
     @if (!Model.Any())
     {
-        <div class="alert alert-info text-center p-4">
-            <h4>No tienes propiedades guardadas en favoritos.</h4>
-            <p>Explora el catálogo principal y marca con el corazón las propiedades que te interesen.</p>
-            <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-2">Ir al Catálogo</a>
+        <div class="alert alert-info text-center p-4 shadow-sm">
+            <h4>No tiene propiedades favoritas disponibles en este momento.</h4>[cite: 1]
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-3">Ir al Catálogo</a>
         </div>
     }
     else
@@ -22,41 +21,47 @@
             {
                 <div class="col">
                     <div class="card h-100 shadow-sm border-0 position-relative">
+                        
+                        @* Renderizado corregido de la imagen principal *@
                         @if (!string.IsNullOrEmpty(property.MainImagePath))
                         {
-                            <img src="@property.MainImagePath" class="card-img-top" alt="@property.Title" style="height: 200px; object-fit: cover;">
+                            <img src="@Url.Content(property.MainImagePath)" class="card-img-top" alt="Propiedad @property.Code" style="height: 200px; object-fit: cover;">
                         }
                         else
                         {
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center text-secondary" style="height: 200px;">
-                                <i class="bi bi-image" style="font-size: 3rem;"></i>
+                                <i class="bi bi-house-door" style="font-size: 3rem;"></i>
                             </div>
                         }
 
+                        @* Botón Quitar de Favoritos *@
                         <div class="position-absolute top-0 end-0 p-2">
                             <form asp-controller="Client" asp-action="ToggleFavorite" method="post">
                                 <input type="hidden" name="propertyId" value="@property.Id" />
                                 <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                                <button type="submit" class="btn btn-danger btn-sm shadow" title="Quitar de favoritos">
-                                    <i class="bi bi-heart-fill"></i>
+                                <button type="submit" class="btn btn-danger btn-sm shadow" title="Quitar de favoritas">[cite: 1]
+                                    <i class="bi bi-heart-fill"></i> Quitar
                                 </button>
                             </form>
                         </div>
 
                         <div class="card-body">
-                            <h5 class="card-title text-truncate">@property.Title</h5>
-                            <p class="text-muted mb-1"><small>Código: @property.Code</small></p>
-                            <h4 class="text-primary fw-bold">RD$ @property.Price.ToString("N2")</h4>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-secondary">@property.PropertyTypeName</span>[cite: 1]
+                                <span class="badge bg-info text-dark">@property.SaleTypeName</span>[cite: 1]
+                            </div>
+                            <p class="text-muted mb-1"><small>Código: <strong>@property.Code</strong></small></p>[cite: 1]
+                            <h4 class="text-primary fw-bold">RD$ @property.Price.ToString("N2")</h4>[cite: 1]
 
-                            <div class="d-flex justify-content-between text-secondary mt-3">
-                                <span><i class="bi bi-door-open"></i> @property.Rooms Hab</span>
-                                <span><i class="bi bi-droplet"></i> @property.Bathrooms Baños</span>
-                                <span><i class="bi bi-aspect-ratio"></i> @property.Size m²</span>
+                            <div class="d-flex justify-content-between text-secondary mt-3 fs-6">
+                                <span><i class="bi bi-door-open"></i> @property.Rooms Hab</span>[cite: 1]
+                                <span><i class="bi bi-droplet"></i> @property.Bathrooms Baños</span>[cite: 1]
+                                <span><i class="bi bi-aspect-ratio"></i> @property.Size m²</span>[cite: 1]
                             </div>
                         </div>
 
                         <div class="card-footer bg-transparent border-0 pb-3">
-                            <a asp-controller="Home" asp-action="Details" asp-route-id="@property.Id" class="btn btn-outline-primary w-100">
+                            <a asp-controller="Client" asp-action="PropertyDetails" asp-route-id="@property.Id" class="btn btn-outline-primary w-100">[cite: 1]
                                 Ver Detalles
                             </a>
                         </div>

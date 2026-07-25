@@ -8,6 +8,7 @@ using RealEstateApp.Infrastructure.Identity.Contexts;
 using RealEstateApp.Infrastructure.Identity.Entities;
 using RealEstateApp.Infrastructure.Identity.Seeds;
 using RealEstateApp.Infrastructure.Shared;
+using RealEstateApp.Infrastructure.Persistence.Seeds;
 
 try
 {
@@ -36,7 +37,7 @@ try
     // Configuración de Controladores con Vistas (MVC)
     builder.Services.AddControllersWithViews();
 
-    // Configuración de Sesión en Memoria (Opcional, pero útil si guardas datos del usuario temporalmente)
+    // Configuración de Sesión en Memoria
     builder.Services.AddSession(opt =>
     {
         opt.IdleTimeout = TimeSpan.FromMinutes(60);
@@ -54,22 +55,25 @@ try
         var services = scope.ServiceProvider;
         try
         {
-            // Aplicar migraciones automáticamente para ApplicationDbContext (Persistencia principal)
+            // 1. Aplicar migraciones automáticas para ApplicationDbContext
             var applicationContext = services.GetRequiredService<ApplicationDbContext>();
             await applicationContext.Database.MigrateAsync();
 
-            // Aplicar migraciones automáticamente para IdentityContext
+            // 2. Sembrado de datos del Negocio (Tipos de Propiedad, Venta y Mejoras) 👈 AQUÍ
+            await DefaultData.SeedAsync(applicationContext);
+
+            // 3. Aplicar migraciones automáticamente para IdentityContext
             var identityContext = services.GetRequiredService<IdentityContext>();
             await identityContext.Database.MigrateAsync();
 
+            // 4. Sembrado de Roles y Usuarios por defecto
             var seeder = services.GetRequiredService<IIdentitySeeds>();
-            // Ejecución asíncrona del Sembrado de Roles y Usuarios (Admin, Agente, Cliente) por defecto
             await seeder.SeedAsync();
         }
         catch (Exception ex)
         {
             var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Ocurrió un error al ejecutar las migraciones o el sembrado (Seed) de datos de Identity.");
+            logger.LogError(ex, "Ocurrió un error al ejecutar las migraciones o el sembrado (Seed) de datos.");
         }
     }
 
@@ -85,10 +89,8 @@ try
     app.UseHttpsRedirection();
     app.UseRouting();
 
-    // Activa el almacenamiento de sesiones en el servidor
     app.UseSession();
 
-    // ¡OJO! Seguridad: Authentication SIEMPRE debe ejecutarse estrictamente antes de Authorization
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -96,7 +98,7 @@ try
 
     app.MapControllerRoute(
         name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}") // Ajustamos la ruta inicial para que por defecto los mande a loguearse
+        pattern: "{controller=Home}/{action=Index}/{id?}")
         .WithStaticAssets();
 
     app.Run();

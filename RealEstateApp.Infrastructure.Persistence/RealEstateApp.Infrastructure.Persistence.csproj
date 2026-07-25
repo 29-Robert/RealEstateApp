@@ -19,4 +19,8 @@
     <ProjectReference Include="..\RealEstateApp.Domain\RealEstateApp.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
 </Project>

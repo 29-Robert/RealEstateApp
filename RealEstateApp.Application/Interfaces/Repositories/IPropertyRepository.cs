@@ -15,7 +15,7 @@ namespace RealEstateApp.Application.Interfaces.Repositories
         Task<int> GenerateUniqueCodeAsync();
         Task<List<Property>> GetByAgentIdAsync(string agentId, bool onlyAvailable = false);
         Task<List<Property>> GetFilteredAsync(int? propertyTypeId, decimal? minPrice, decimal? maxPrice, int? rooms, int? bathrooms);
-        Task<bool> ChangeStatusAsync(int propertyId, PropertyStatusEnum status);
+        Task<bool> ChangeStatusAsync(int propertyId, PropertyStatus status);
         Task<(int available, int sold)> GetKpiCountsAsync();
     }
 }

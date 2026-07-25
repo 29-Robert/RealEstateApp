@@ -91,6 +91,9 @@ namespace RealEstateApp.Infrastructure.Persistence.Migrations
                     b.Property<int>("PropertyId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("PropertyId1")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -98,7 +101,9 @@ namespace RealEstateApp.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PropertyId");
 
-                    b.ToTable("Favorite");
+                    b.HasIndex("PropertyId1");
+
+                    b.ToTable("Favorites", (string)null);
                 });
 
             modelBuilder.Entity("RealEstateApp.Domain.Entities.Improvement", b =>
@@ -386,10 +391,14 @@ namespace RealEstateApp.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("RealEstateApp.Domain.Entities.Favorite", b =>
                 {
                     b.HasOne("RealEstateApp.Domain.Entities.Property", "Property")
-                        .WithMany("Favorites")
+                        .WithMany()
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("RealEstateApp.Domain.Entities.Property", null)
+                        .WithMany("Favorites")
+                        .HasForeignKey("PropertyId1");
 
                     b.Navigation("Property");
                 });

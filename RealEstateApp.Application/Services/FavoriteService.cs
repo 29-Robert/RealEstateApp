@@ -57,7 +57,7 @@ namespace RealEstateApp.Application.Services
 
             var allProperties = await _propertyRepository.GetAllAsync();
             var favoriteProperties = allProperties
-                .Where(p => clientFavoritePropertyIds.Contains(p.Id) && p.PropertyStatus == PropertyStatusEnum.Disponible)
+                .Where(p => clientFavoritePropertyIds.Contains(p.Id) && p.PropertyStatus == PropertyStatus.Disponible)
                 .ToList();
 
             // Mapeo corregido con AutoMapper

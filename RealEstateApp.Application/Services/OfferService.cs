@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 namespace RealEstateApp.Application.Services
 {
-   
     public class OfferService : IOfferService
     {
         private readonly IOfferRepository _offerRepository;
@@ -26,7 +25,6 @@ namespace RealEstateApp.Application.Services
             IPropertyRepository propertyRepository,
             IAccountService accountService,
             IMapper mapper)
-        public OfferService(IOfferRepository offerRepository, IMapper mapper)
         {
             _offerRepository = offerRepository;
             _propertyRepository = propertyRepository;
@@ -35,21 +33,15 @@ namespace RealEstateApp.Application.Services
         }
 
         public async Task<List<OfferDto>> GetClientOffersAsync(int propertyId, string clientId)
-        public async Task<OfferDto> CreateOfferAsync(SaveOfferDto dto)
         {
             var offers = await _offerRepository.GetAllAsync();
             var filtered = offers
                 .Where(o => o.PropertyId == propertyId && o.ClientId == clientId)
                 .OrderByDescending(o => o.OfferDate)
                 .ToList();
-            // Bloqueos minuciosos
-            if (await _offerRepository.HasPendingOfferAsync(dto.ClientId, dto.PropertyId))
-                throw new InvalidOperationException("Ya tienes una oferta pendiente en esta propiedad");
 
             var client = await _accountService.GetUserByIdAsync(clientId);
             string clientName = client != null ? $"{client.FirstName} {client.LastName}" : "Cliente";
-            if (await _offerRepository.HasAcceptedOfferAsync(dto.PropertyId))
-                throw new InvalidOperationException("Esta propiedad ya tiene una oferta aceptada");
 
             var dtos = _mapper.Map<List<OfferDto>>(filtered);
             foreach (var dto in dtos)
@@ -58,60 +50,29 @@ namespace RealEstateApp.Application.Services
             }
             return dtos;
         }
+
+        public async Task<OfferDto> CreateOfferAsync(SaveOfferDto dto)
+        {
+            if (await HasPendingOfferAsync(dto.PropertyId, dto.ClientId))
+                throw new InvalidOperationException("Ya tienes una oferta pendiente en esta propiedad");
+
+            if (await HasAcceptedOfferAsync(dto.PropertyId))
+                throw new InvalidOperationException("Esta propiedad ya tiene una oferta aceptada");
+
             var entity = _mapper.Map<Offer>(dto);
             var created = await _offerRepository.AddAsync(entity);
 
-        public async Task<List<OfferDto>> GetOffersByPropertyAsync(int propertyId)
-        {
-            var offers = await _offerRepository.GetAllAsync();
-            var filtered = offers
-                .Where(o => o.PropertyId == propertyId)
-                .OrderByDescending(o => o.OfferDate)
-                .ToList();
-
-            var dtos = _mapper.Map<List<OfferDto>>(filtered);
-            var cache = new Dictionary<string, string>();
-            foreach (var dto in dtos)
-            {
-                if (!cache.ContainsKey(dto.ClientId))
-                {
-                    var client = await _accountService.GetUserByIdAsync(dto.ClientId);
-                    cache[dto.ClientId] = client != null ? $"{client.FirstName} {client.LastName}" : "Cliente";
             return _mapper.Map<OfferDto>(created);
-                }
-                dto.ClientFullName = cache[dto.ClientId];
-            }
-            return dtos;
-        }
-
-        public async Task<List<OfferDto>> GetAgentOffersAsync(string agentId)
-        public async Task<List<OfferDto>> GetByAgentAsync(string agentId)
-        {
-            var agentProperties = await _propertyRepository.GetByAgentIdAsync(agentId, false);
-            var propertyIds = agentProperties.Select(p => p.Id).ToList();
-
-            var offers = await _offerRepository.GetAllAsync();
-            var filtered = offers
-                .Where(o => propertyIds.Contains(o.PropertyId))
-                .OrderByDescending(o => o.OfferDate)
-                .ToList();
-
-            var dtos = _mapper.Map<List<OfferDto>>(filtered);
-            var cache = new Dictionary<string, string>();
-            foreach (var dto in dtos)
-            {
-                if (!cache.ContainsKey(dto.ClientId))
-                {
-                    var client = await _accountService.GetUserByIdAsync(dto.ClientId);
-                    cache[dto.ClientId] = client != null ? $"{client.FirstName} {client.LastName}" : "Cliente";
-                }
-                dto.ClientFullName = cache[dto.ClientId];
-            }
-            return dtos;
         }
 
         public async Task CreateOfferAsync(SendOfferViewModel vm, string clientId)
         {
+            if (await HasPendingOfferAsync(vm.PropertyId, clientId))
+                throw new InvalidOperationException("Ya tienes una oferta pendiente en esta propiedad");
+
+            if (await HasAcceptedOfferAsync(vm.PropertyId))
+                throw new InvalidOperationException("Esta propiedad ya tiene una oferta aceptada");
+
             var offer = new Offer
             {
                 PropertyId = vm.PropertyId,
@@ -124,7 +85,59 @@ namespace RealEstateApp.Application.Services
             await _offerRepository.AddAsync(offer);
         }
 
-        public async Task AcceptOfferAsync(int offerId, string agentId)
+        public async Task<List<OfferDto>> GetOffersByPropertyAsync(int propertyId)
+        {
+            var offers = await _offerRepository.GetAllAsync();
+            var filtered = offers
+                .Where(o => o.PropertyId == propertyId)
+                .OrderByDescending(o => o.OfferDate)
+                .ToList();
+
+            var dtos = _mapper.Map<List<OfferDto>>(filtered);
+            var cache = new Dictionary<string, string>();
+
+            foreach (var dto in dtos)
+            {
+                if (!cache.ContainsKey(dto.ClientId))
+                {
+                    var client = await _accountService.GetUserByIdAsync(dto.ClientId);
+                    cache[dto.ClientId] = client != null ? $"{client.FirstName} {client.LastName}" : "Cliente";
+                }
+                dto.ClientFullName = cache[dto.ClientId];
+            }
+            return dtos;
+        }
+
+        public async Task<List<OfferDto>> GetAgentOffersAsync(string agentId)
+        {
+            var agentProperties = await _propertyRepository.GetByAgentIdAsync(agentId, false);
+            var propertyIds = agentProperties.Select(p => p.Id).ToList();
+
+            var offers = await _offerRepository.GetAllAsync();
+            var filtered = offers
+                .Where(o => propertyIds.Contains(o.PropertyId))
+                .OrderByDescending(o => o.OfferDate)
+                .ToList();
+
+            var dtos = _mapper.Map<List<OfferDto>>(filtered);
+            var cache = new Dictionary<string, string>();
+
+            foreach (var dto in dtos)
+            {
+                if (!cache.ContainsKey(dto.ClientId))
+                {
+                    var client = await _accountService.GetUserByIdAsync(dto.ClientId);
+                    cache[dto.ClientId] = client != null ? $"{client.FirstName} {client.LastName}" : "Cliente";
+                }
+                dto.ClientFullName = cache[dto.ClientId];
+            }
+            return dtos;
+        }
+
+        // Sobrecarga para cumplir con IOfferService sin romper la firma
+        public async Task<List<OfferDto>> GetByAgentAsync(string agentId) => await GetAgentOffersAsync(agentId);
+
+        public async Task AcceptOfferAsync(int offerId, string? agentId = null)
         {
             var offer = await _offerRepository.GetByIdAsync(offerId);
             if (offer == null) return;
@@ -132,16 +145,14 @@ namespace RealEstateApp.Application.Services
             offer.Status = OfferStatus.Aceptada;
             await _offerRepository.UpdateAsync(offer);
 
-            // Cambiar estado de la propiedad a Vendida
             var property = await _propertyRepository.GetByIdAsync(offer.PropertyId);
             if (property != null)
             {
-                property.PropertyStatus = PropertyStatusEnum.Vendida;
-                property.Status = PropertyStatusEnum.Vendida.ToString();
+                property.PropertyStatus = PropertyStatus.Vendida;
+                property.Status = PropertyStatus.Vendida.ToString();
                 await _propertyRepository.UpdateAsync(property);
             }
 
-            // Rechazar el resto de las ofertas pendientes para esa propiedad
             var allOffers = await _offerRepository.GetAllAsync();
             var pendingOffers = allOffers
                 .Where(o => o.PropertyId == offer.PropertyId && o.Id != offer.Id && o.Status == OfferStatus.Pendiente)
@@ -152,11 +163,12 @@ namespace RealEstateApp.Application.Services
                 pending.Status = OfferStatus.Rechazada;
                 await _offerRepository.UpdateAsync(pending);
             }
-            var entities = await _offerRepository.GetByAgentIdAsync(agentId);
-            return _mapper.Map<List<OfferDto>>(entities);
         }
 
-        public async Task RejectOfferAsync(int offerId, string agentId)
+        // Sobrecarga de un solo parámetro para cumplir con la interfaz
+        public async Task AcceptOfferAsync(int offerId) => await AcceptOfferAsync(offerId, null);
+
+        public async Task RejectOfferAsync(int offerId, string? agentId = null)
         {
             var offer = await _offerRepository.GetByIdAsync(offerId);
             if (offer == null) return;
@@ -164,21 +176,20 @@ namespace RealEstateApp.Application.Services
             offer.Status = OfferStatus.Rechazada;
             await _offerRepository.UpdateAsync(offer);
         }
-        // oferta ,Aceptada, demas ofertas Pendientes de la propiedad
-        // Rechazada, propiedad y Vendida.
+
+        // Sobrecarga de un solo parámetro para cumplir con la interfaz
+        public async Task RejectOfferAsync(int offerId) => await RejectOfferAsync(offerId, null);
 
         public async Task<bool> HasPendingOfferAsync(int propertyId, string clientId)
         {
             var offers = await _offerRepository.GetAllAsync();
             return offers.Any(o => o.PropertyId == propertyId && o.ClientId == clientId && o.Status == OfferStatus.Pendiente);
         }
-        public async Task AcceptOfferAsync(int offerId) => await _offerRepository.AcceptOfferWithCascadeAsync(offerId);
 
         public async Task<bool> HasAcceptedOfferAsync(int propertyId)
         {
             var offers = await _offerRepository.GetAllAsync();
             return offers.Any(o => o.PropertyId == propertyId && o.Status == OfferStatus.Aceptada);
         }
-        public async Task RejectOfferAsync(int offerId) => await _offerRepository.RejectOfferAsync(offerId);
     }
 }

@@ -14,7 +14,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
         public async Task<List<Property>> GetAvailableOrderedByNewestAsync()
         {
             return await _dbContext.Properties
-                .Where(p => p.PropertyStatus == PropertyStatusEnum.Disponible)
+                .Where(p => p.PropertyStatus == PropertyStatus.Disponible)
                 .Include(p => p.PropertyType)
                 .Include(p => p.SaleType)
                 .Include(p => p.PropertyImages)
@@ -57,7 +57,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
 
             if (onlyAvailable)
             {
-                query = query.Where(p => p.PropertyStatus == PropertyStatusEnum.Disponible);
+                query = query.Where(p => p.PropertyStatus == PropertyStatus.Disponible);
             }
 
             return await query.OrderByDescending(p => p.Id).ToListAsync();
@@ -71,7 +71,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
             int? bathrooms)
         {
             var query = _dbContext.Properties
-                .Where(p => p.PropertyStatus == PropertyStatusEnum.Disponible)
+                .Where(p => p.PropertyStatus == PropertyStatus.Disponible)
                 .Include(p => p.PropertyType)
                 .Include(p => p.SaleType)
                 .Include(p => p.PropertyImages)
@@ -95,7 +95,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
             return await query.OrderByDescending(p => p.Id).ToListAsync();
         }
 
-        public async Task<bool> ChangeStatusAsync(int propertyId, PropertyStatusEnum status)
+        public async Task<bool> ChangeStatusAsync(int propertyId, PropertyStatus status)
         {
             var property = await _dbContext.Properties.FindAsync(propertyId);
             if (property == null) return false;
@@ -109,9 +109,9 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
         public async Task<(int available, int sold)> GetKpiCountsAsync()
         {
             var available = await _dbContext.Properties
-                .CountAsync(p => p.PropertyStatus == PropertyStatusEnum.Disponible);
+                .CountAsync(p => p.PropertyStatus == PropertyStatus.Disponible);
             var sold = await _dbContext.Properties
-                .CountAsync(p => p.PropertyStatus == PropertyStatusEnum.Vendida);
+                .CountAsync(p => p.PropertyStatus == PropertyStatus.Vendida);
             return (available, sold);
         }
 

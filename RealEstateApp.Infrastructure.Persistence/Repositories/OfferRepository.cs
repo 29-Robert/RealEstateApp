@@ -7,25 +7,24 @@ using RealEstateApp.Infrastructure.Persistence.Contexts;
 namespace RealEstateApp.Infrastructure.Persistence.Repositories
 {
     public class OfferRepository(ApplicationDbContext dbContext) : GenericRepository<Offer>(dbContext), IOfferRepository
-
-    public class OfferRepository : GenericRepository<Offer>, IOfferRepository
     {
-        public OfferRepository(ApplicationDbContext context) : base(context) { }
+        private readonly ApplicationDbContext _dbContext = dbContext;
 
         public async Task<bool> HasPendingOfferAsync(string clientId, int propertyId)
         {
-            return await _entity.AnyAsync(o =>
-                o.ClientId == clientId && o.PropertyId == propertyId && o.Status == OfferStatusEnum.Pendiente);
+            return await _dbContext.Set<Offer>().AnyAsync(o =>
+                o.ClientId == clientId && o.PropertyId == propertyId && o.Status == OfferStatus.Pendiente);
         }
 
         public async Task<bool> HasAcceptedOfferAsync(int propertyId)
         {
-            return await _entity.AnyAsync(o => o.PropertyId == propertyId && o.Status == OfferStatusEnum.Aceptada);
+            return await _dbContext.Set<Offer>().AnyAsync(o => o.PropertyId == propertyId && o.Status == OfferStatus.Aceptada);
         }
 
         public async Task<List<Offer>> GetByPropertyIdAsync(int propertyId)
         {
-            return await _entity.Include(o => o.Property)
+            return await _dbContext.Set<Offer>()
+                .Include(o => o.Property)
                 .Where(o => o.PropertyId == propertyId)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
@@ -33,40 +32,44 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
 
         public async Task<List<Offer>> GetByAgentIdAsync(string agentId)
         {
-            return await _entity.Include(o => o.Property)
+            return await _dbContext.Set<Offer>()
+                .Include(o => o.Property)
                 .Where(o => o.Property.AgentId == agentId)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
         }
 
-   
-        // Todo dentro de una transaccion para garantizar consistencia.
-
         public async Task AcceptOfferWithCascadeAsync(int offerId)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                var offer = await _entity.Include(o => o.Property).FirstOrDefaultAsync(o => o.Id == offerId);
+                var offer = await _dbContext.Set<Offer>()
+                    .Include(o => o.Property)
+                    .FirstOrDefaultAsync(o => o.Id == offerId);
+
                 if (offer is null) throw new InvalidOperationException("Oferta no encontrada");
 
-                offer.Status = OfferStatusEnum.Aceptada;
-                offer.UpdatedAt = DateTime.Now;
+                offer.Status = OfferStatus.Aceptada;
+                offer.UpdatedAt = DateTime.UtcNow;
 
-                var otherPendingOffers = await _entity
-                    .Where(o => o.PropertyId == offer.PropertyId && o.Id != offerId && o.Status == OfferStatusEnum.Pendiente)
+                var otherPendingOffers = await _dbContext.Set<Offer>()
+                    .Where(o => o.PropertyId == offer.PropertyId && o.Id != offerId && o.Status == OfferStatus.Pendiente)
                     .ToListAsync();
 
                 foreach (var otherOffer in otherPendingOffers)
                 {
-                    otherOffer.Status = OfferStatusEnum.Rechazada;
-                    otherOffer.UpdatedAt = DateTime.Now;
+                    otherOffer.Status = OfferStatus.Rechazada;
+                    otherOffer.UpdatedAt = DateTime.UtcNow;
                 }
 
-                offer.Property.Status = PropertyStatusEnum.Vendida;
-                offer.Property.UpdatedAt = DateTime.Now;
+                if (offer.Property != null)
+                {
+                    offer.Property.Status = PropertyStatus.Vendida.ToString();
+                    offer.Property.UpdatedAt = DateTime.UtcNow;
+                }
 
-                await _context.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
             catch
@@ -77,14 +80,13 @@ namespace RealEstateApp.Infrastructure.Persistence.Repositories
         }
 
         public async Task<Offer?> RejectOfferAsync(int offerId)
-    {
-        private readonly ApplicationDbContext _dbContext = dbContext;
-            var offer = await _entity.FindAsync(offerId);
+        {
+            var offer = await _dbContext.Set<Offer>().FindAsync(offerId);
             if (offer is null) return null;
 
-            offer.Status = OfferStatusEnum.Rechazada;
-            offer.UpdatedAt = DateTime.Now;
-            await _context.SaveChangesAsync();
+            offer.Status = OfferStatus.Rechazada;
+            offer.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
             return offer;
         }
     }

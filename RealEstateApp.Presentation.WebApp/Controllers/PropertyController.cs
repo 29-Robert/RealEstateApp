@@ -47,25 +47,26 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SavePropertyDto dto, List<IFormFile> images)
         {
             if (!ModelState.IsValid)
             {
-                await LoadDropdowns();
+                await LoadDropdowns(dto.PropertyTypeId, dto.SaleTypeId);
                 return View(dto);
             }
 
             if (images == null || images.Count == 0)
             {
                 ModelState.AddModelError("images", "Debe cargar al menos una imagen.");
-                await LoadDropdowns();
+                await LoadDropdowns(dto.PropertyTypeId, dto.SaleTypeId);
                 return View(dto);
             }
 
             if (images.Count > 4)
             {
                 ModelState.AddModelError("images", "Puede cargar un máximo de 4 imágenes.");
-                await LoadDropdowns();
+                await LoadDropdowns(dto.PropertyTypeId, dto.SaleTypeId);
                 return View(dto);
             }
 
@@ -94,19 +95,31 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            await LoadDropdowns();
+            // Cargar tipos y mantener seleccionados los valores actuales
+            await LoadDropdowns(property.PropertyTypeId, property.SaleTypeId);
+
+            // Mapeo seguro de las mejoras seleccionadas
+            var allImprovements = await _improvementService.GetAllViewModel();
+            var selectedImprovementIds = property.ImprovementIds?.Any() == true
+                ? property.ImprovementIds
+                : allImprovements
+                    .Where(imp => property.Improvements != null && property.Improvements.Contains(imp.Name))
+                    .Select(imp => imp.Id)
+                    .ToList();
 
             var dto = new SavePropertyDto
             {
+                Id = property.Id,
                 Title = property.Title,
                 Description = property.Description ?? string.Empty,
                 Price = property.Price,
                 Size = property.Size,
                 Rooms = property.Rooms,
                 Bathrooms = property.Bathrooms,
-                PropertyTypeId = property.Id,
-                SaleTypeId = property.Id,
-                AgentId = property.AgentId
+                PropertyTypeId = property.PropertyTypeId,
+                SaleTypeId = property.SaleTypeId,
+                AgentId = property.AgentId,
+                ImprovementIds = selectedImprovementIds
             };
 
             ViewBag.PropertyId = id;
@@ -115,17 +128,21 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, SavePropertyDto dto, List<IFormFile> newImages, List<int> existingImageIds)
         {
+            dto.Id = id; // Asegura que el DTO lleve el ID recibido por parámetro
+
             if (!ModelState.IsValid)
             {
-                await LoadDropdowns();
+                await LoadDropdowns(dto.PropertyTypeId, dto.SaleTypeId);
                 ViewBag.PropertyId = id;
                 return View(dto);
             }
 
             var property = await _propertyService.GetByIdAsync(id);
             if (property == null) return RedirectToAction(nameof(Index));
+
             if (property.AgentId != GetCurrentAgentId())
             {
                 TempData["ErrorMessage"] = "No puedes editar esta propiedad.";
@@ -166,6 +183,7 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeletePost(int id)
         {
             var property = await _propertyService.GetByIdAsync(id);
@@ -182,14 +200,14 @@ namespace RealEstateApp.Presentation.WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task LoadDropdowns()
+        private async Task LoadDropdowns(int? selectedPropertyTypeId = null, int? selectedSaleTypeId = null)
         {
             var types = await _propertyTypeService.GetAllViewModel();
             var sales = await _saleTypeService.GetAllViewModel();
             var improvements = await _improvementService.GetAllViewModel();
 
-            ViewBag.PropertyTypes = new SelectList(types, "Id", "Name");
-            ViewBag.SaleTypes = new SelectList(sales, "Id", "Name");
+            ViewBag.PropertyTypes = new SelectList(types, "Id", "Name", selectedPropertyTypeId);
+            ViewBag.SaleTypes = new SelectList(sales, "Id", "Name", selectedSaleTypeId);
             ViewBag.Improvements = improvements;
         }
 

@@ -12,11 +12,13 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
         public DbSet<PropertyImage> PropertyImages { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<Offer> Offers { get; set; }
+        public DbSet<Favorite> Favorites { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            // CONFIGURACIÓN DE OFFERS
             modelBuilder.Entity<Offer>()
                 .ToTable("Offers")
                 .Property(o => o.Amount)
@@ -28,6 +30,23 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
                 .HasForeignKey(o => o.PropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // CONFIGURACIÓN DE FAVORITES (CORREGIDA LA FK)
+            modelBuilder.Entity<Favorite>()
+                .ToTable("Favorites")
+                .HasOne(f => f.Property)
+                .WithMany()
+                .HasForeignKey(f => f.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // CONFIGURACIÓN DE MESSAGES
+            modelBuilder.Entity<Message>()
+                .ToTable("Messages")
+                .HasOne(m => m.Property)
+                .WithMany()
+                .HasForeignKey(m => m.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // CONFIGURACIÓN DE PROPERTY
             modelBuilder.Entity<Property>()
                 .ToTable("Properties")
                 .Property(p => p.Price)
@@ -66,13 +85,6 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
                 .HasMany<PropertyImage>(p => p.PropertyImages)
                 .WithOne(pi => pi.Property)
                 .HasForeignKey(pi => pi.PropertyId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Message>()
-                .ToTable("Messages")
-                .HasOne(m => m.Property)
-                .WithMany()
-                .HasForeignKey(m => m.PropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

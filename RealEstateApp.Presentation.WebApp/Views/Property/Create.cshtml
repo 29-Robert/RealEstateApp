@@ -8,12 +8,46 @@
 }
 
 <style>
-    .form-section { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 24px; }
-    .form-section h5 { font-weight: 700; color: #1e3a5f; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; margin-bottom: 20px; }
-    .page-header { background: linear-gradient(135deg, #1e3a5f, #0d6efd); color: white; padding: 35px 0; }
-    .image-preview-container { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
-    .image-preview img { width: 80px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid #dee2e6; }
-    .improvement-check label { cursor: pointer; }
+    .form-section {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        margin-bottom: 24px;
+    }
+
+        .form-section h5 {
+            font-weight: 700;
+            color: #1e3a5f;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+    .page-header {
+        background: linear-gradient(135deg, #1e3a5f, #0d6efd);
+        color: white;
+        padding: 35px 0;
+    }
+
+    .image-preview-container {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+    }
+
+    .image-preview img {
+        width: 80px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+    }
+
+    .improvement-check label {
+        cursor: pointer;
+    }
 </style>
 
 <section class="page-header mb-4">
@@ -84,15 +118,21 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <label asp-for="PropertyTypeId" class="form-label fw-semibold">Tipo de propiedad *</label>
-                    <select asp-for="PropertyTypeId" asp-items="ViewBag.PropertyTypes" class="form-select">
+                    <select asp-for="PropertyTypeId" class="form-select">
                         <option value="">-- Seleccionar tipo --</option>
+                        <option value="1">Apartamento</option>
+                        <option value="2">Casa</option>
+                        <option value="3">Villa</option>
+                        <option value="4">Terreno</option>
                     </select>
                     <span asp-validation-for="PropertyTypeId" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
                     <label asp-for="SaleTypeId" class="form-label fw-semibold">Tipo de venta *</label>
-                    <select asp-for="SaleTypeId" asp-items="ViewBag.SaleTypes" class="form-select">
+                    <select asp-for="SaleTypeId" class="form-select">
                         <option value="">-- Seleccionar tipo --</option>
+                        <option value="1">Venta</option>
+                        <option value="2">Alquiler</option>
                     </select>
                     <span asp-validation-for="SaleTypeId" class="text-danger small"></span>
                 </div>
@@ -121,14 +161,13 @@
                 </div>
             </div>
         }
-
         <!-- Sección: Imágenes -->
         <div class="form-section">
             <h5><i class="bi bi-images me-2 text-primary"></i>Imágenes (1 a 4 fotos)</h5>
             <div class="mb-3">
-                <input type="file" name="images" id="images" class="form-control"
-                       multiple accept="image/*" onchange="previewImages(this)">
-                <div class="form-text">Selecciona entre 1 y 4 imágenes. La primera será la imagen principal.</div>
+                <input type="file" name="images" id="imageInput" class="form-control"
+                       multiple accept="image/*" onchange="handleImageSelection(this)">
+                <div class="form-text">Puedes elegir varias fotos a la vez o agregarlas en distintos momentos (máximo 4 en total).</div>
             </div>
             <div class="image-preview-container" id="imagePreview"></div>
         </div>
@@ -147,26 +186,68 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        function previewImages(input) {
-            const container = document.getElementById('imagePreview');
-            container.innerHTML = '';
-            const files = input.files;
-            if (files.length > 4) {
-                alert('Solo puedes seleccionar un máximo de 4 imágenes.');
+        // Arreglo donde guardamos los archivos
+        let selectedFiles = [];
+
+        function handleImageSelection(input) {
+            const newFiles = Array.from(input.files);
+
+            // Validar si el acumulado supera el límite de 4 imágenes
+            if (selectedFiles.length + newFiles.length > 4) {
+                alert('Solo puedes seleccionar un máximo de 4 imágenes en total.');
                 input.value = '';
                 return;
             }
-            for (let i = 0; i < files.length; i++) {
+
+            // Unir los nuevos archivos al listado actual
+            selectedFiles = selectedFiles.concat(newFiles);
+
+            // Sincronizar con el input
+            updateInputFiles(input);
+
+            // Renderizar la vista previa
+            renderPreviews(input);
+        }
+
+        function removeImage(index) {
+            // Eliminar elemento seleccionado
+            selectedFiles.splice(index, 1);
+
+            const input = document.getElementById('imageInput');
+            updateInputFiles(input);
+            renderPreviews(input);
+        }
+
+        function updateInputFiles(input) {
+            // DataTransfer permite asignarle una lista personalizada de archivos al input HTML
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            input.files = dt.files;
+        }
+
+        function renderPreviews(input) {
+            const container = document.getElementById('imagePreview');
+            container.innerHTML = '';
+
+            selectedFiles.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     const div = document.createElement('div');
-                    div.className = 'image-preview';
-                    div.innerHTML = `<img src="${e.target.result}" alt="Vista previa ${i+1}">
-                                     <div class="text-center mt-1" style="font-size:0.7rem; color:#6c757d;">${i === 0 ? '<span class=\'badge bg-primary\'>Principal</span>' : `Foto ${i+1}`}</div>`;
+                    div.className = 'image-preview position-relative';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="Vista previa ${index + 1}">
+                        <button type="button"
+                                class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 rounded-circle"
+                                style="width: 20px; height: 20px; line-height: 12px; font-size: 0.75rem; transform: translate(30%, -30%);"
+                                onclick="removeImage(${index})"
+                                title="Eliminar foto">&times;</button>
+                        <div class="text-center mt-1" style="font-size:0.7rem; color:#6c757d;">
+                            ${index === 0 ? '<span class="badge bg-primary">Principal</span>' : `Foto ${index + 1}`}
+                        </div>`;
                     container.appendChild(div);
                 };
-                reader.readAsDataURL(files[i]);
-            }
+                reader.readAsDataURL(file);
+            });
         }
     </script>
 }

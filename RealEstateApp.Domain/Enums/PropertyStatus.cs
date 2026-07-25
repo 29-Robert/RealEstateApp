@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RealEstateApp.Domain.Enums
 {
-    public enum PropertyStatusEnum
+    public enum PropertyStatus
     {
         Disponible = 1,
         Vendida = 2

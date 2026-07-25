@@ -17,7 +17,7 @@ namespace RealEstateApp.Domain.Entities
 
         public int PropertyTypeId { get; set; }
         public virtual PropertyType PropertyType { get; set; } = null!;
-        public PropertyStatusEnum PropertyStatus { get; set; } = PropertyStatusEnum.Disponible;
+        public PropertyStatus PropertyStatus { get; set; } = PropertyStatus.Disponible;
 
         public int SaleTypeId { get; set; }
         public virtual SaleType SaleType { get; set; } = null!;
