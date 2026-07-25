@@ -20,9 +20,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull; // Opcional: limpia los nulls del JSON
     }); builder.Services.AddEndpointsApiExplorer();
 
-// ==========================================
-// NUEVO: POLÍTICA DE CORS (Evita bloqueos con la WebApp)
-// ==========================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("WebAppPolicy", policy =>
@@ -70,9 +67,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ==========================================
-// SEMBRADO AUTOMÁTICO DE DATOS (SEEDS)
-// ==========================================
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -88,9 +82,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ==========================================
-// MIDDLEWARES DE LA APLICACIÓN (PIPELINE)
-// ==========================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
