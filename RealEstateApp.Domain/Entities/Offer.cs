@@ -13,6 +13,7 @@ namespace RealEstateApp.Domain.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
+        [Column("Date")]
         public DateTime OfferDate { get; set; }
         public OfferStatus Status { get; set; }
 

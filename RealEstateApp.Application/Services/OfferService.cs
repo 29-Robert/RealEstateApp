@@ -1,6 +1,5 @@
-﻿using AutoMapper;
+using AutoMapper;
 using RealEstateApp.Application.DTOs.Offer;
-using RealEstateApp.Application.DTOs.Offer.RealEstateApp.Application.DTOs.Offer;
 using RealEstateApp.Application.Interfaces.Repositories;
 using RealEstateApp.Application.Interfaces.Services;
 using RealEstateApp.Application.ViewModels.Offer;
@@ -139,6 +138,11 @@ namespace RealEstateApp.Application.Services
 
         public async Task AcceptOfferAsync(int offerId, string? agentId = null)
         {
+            await AcceptOfferAsync(offerId);
+        }
+
+        public async Task AcceptOfferAsync(int offerId)
+        {
             var offer = await _offerRepository.GetByIdAsync(offerId);
             if (offer == null) return;
 
@@ -169,6 +173,11 @@ namespace RealEstateApp.Application.Services
         public async Task AcceptOfferAsync(int offerId) => await AcceptOfferAsync(offerId, null);
 
         public async Task RejectOfferAsync(int offerId, string? agentId = null)
+        {
+            await RejectOfferAsync(offerId);
+        }
+
+        public async Task RejectOfferAsync(int offerId)
         {
             var offer = await _offerRepository.GetByIdAsync(offerId);
             if (offer == null) return;

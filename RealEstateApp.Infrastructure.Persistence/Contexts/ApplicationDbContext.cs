@@ -20,7 +20,7 @@ namespace RealEstateApp.Infrastructure.Persistence.Contexts
 
             // CONFIGURACIÓN DE OFFERS
             modelBuilder.Entity<Offer>()
-                .ToTable("Offers")
+                .ToTable("Offer")
                 .Property(o => o.Amount)
                 .HasColumnType("decimal(18,2)");
 

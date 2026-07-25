@@ -1,6 +1,5 @@
-﻿using RealEstateApp.Application.DTOs.Offer;
+using RealEstateApp.Application.DTOs.Offer;
 using RealEstateApp.Application.ViewModels.Offer;
-using RealEstateApp.Application.DTOs.Offer.RealEstateApp.Application.DTOs.Offer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
