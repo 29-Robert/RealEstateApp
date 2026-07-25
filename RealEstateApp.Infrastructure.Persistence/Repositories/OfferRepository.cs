@@ -3,20 +3,16 @@ using RealEstateApp.Application.Interfaces.Repositories;
 using RealEstateApp.Domain.Entities;
 using RealEstateApp.Domain.Enums;
 using RealEstateApp.Infrastructure.Persistence.Contexts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace RealEstateApp.Infrastructure.Persistence.Repositories
 {
-    public class OfferRepository(ApplicationDbContext dbContext) : GenericRepository<Offer>(dbContext), IOfferRepository
+    public class OfferRepository : GenericRepository<Offer>, IOfferRepository
     {
-        private readonly ApplicationDbContext _dbContext = dbContext;
+        private readonly ApplicationDbContext _dbContext;
 
         public OfferRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
+            _dbContext = context;
         }
 
         public async Task<bool> HasPendingOfferAsync(string clientId, int propertyId)
